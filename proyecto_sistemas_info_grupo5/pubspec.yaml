@@ -1,37 +1,24 @@
 name: proyecto_sistemas_info_grupo5
-description: "A new Flutter project for EcoRutasVzla."
+description: A new Flutter project.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0' 
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-
-  # CORE DE FIREBASE 
-  firebase_core: ^3.1.1 
-  
-  # Autenticación 
-  firebase_auth: ^5.1.1
-  
-  # Base de datos
-  cloud_firestore: ^5.0.2
-  
-  # Gestión de imágenes 
-  firebase_storage: ^12.0.1
-  image_picker: ^1.1.2
-
-  # Manejo de Estado para MVC
-  provider: ^6.1.2
-
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0 
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo_rutas.png
+    - assets/logo_unimet.png
+    - assets/ubicacion.png
