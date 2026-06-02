@@ -1,5 +1,4 @@
 //Esta clase es el servicio que se comunicará con Firebase Auth.
-
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Auth {
@@ -12,7 +11,30 @@ class Auth {
     return _auth.authStateChanges();
   }
 
-  // Función para Iniciar Sesión
+  // Función para Iniciar Sesión (Ahora funciona solo para correo Unimet)
+  Future<UserCredential?> registroConEmail(
+      String email, String password) async {
+    try {
+      // Validación previa de dominio
+      if (!email.toLowerCase().endsWith('@correo.unimet.edu.ve')) {
+        throw Exception(
+            'Solo se permiten registros con correos de la Universidad Metropolitana (@correo.unimet.edu.ve).');
+      }
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      print("Error nativo en Registro Firebase: ${e.code}");
+      rethrow;
+    } catch (e) {
+      print("Error de validación: ${e.toString()}");
+      rethrow;
+    }
+  }
+
   Future<UserCredential?> loginConEmail(String email, String password) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
@@ -20,8 +42,8 @@ class Auth {
         password: password,
       );
       return userCredential;
+      //Aquí se manejan los errores como la contraseña incorrecta.
     } on FirebaseAuthException catch (e) {
-      //Aquí se manejaran los distintos errores que se puedan tener como la contraseña incorrecta
       print("Error en Firebase: ${e.code}");
       rethrow;
     }
