@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'login/login_screen.dart';
+import 'homepage/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF009933)),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const HomePage(),
     );
   }
 }
