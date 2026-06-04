@@ -41,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await _authService.loginConEmail(email, password);
 
+      // El cambio de pantalla lo hace el auth_whapper automaticamente si las credenciales son correctas.
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('¡Bienvenido a EcoRutas!')),
       );
@@ -165,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: true,
                           decoration: InputDecoration(
-                            hintText: '********',
+                            hintText: '**********',
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(5)),
                             contentPadding:

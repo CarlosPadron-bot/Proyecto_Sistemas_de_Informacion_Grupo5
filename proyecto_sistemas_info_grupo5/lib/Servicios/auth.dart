@@ -7,9 +7,9 @@ class Auth {
 
   // El Stream sirve para escuchar si el usuario ya está logueado o no para saber si aparecer en
   //la pantalla de inicio o en la de inicio de sesión
-  Stream<User?> get userStatus {
-    return _auth.authStateChanges();
-  }
+  //Firebase esta avisando si el usuario esta logueado o no
+  //entonces al abrir la app, si encuentra un token guardado, devuelve el usuario
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   // Función para Iniciar Sesión (Ahora funciona solo para correo Unimet)
   Future<UserCredential?> registroConEmail(

@@ -14,8 +14,10 @@ class RegisterState extends State<RegisterScreen> {
   final Auth _authService = Auth();
 
   void _handleRegister() async {
-    if (emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty) {
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    
+if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, rellena todos los campos.')),
       );
@@ -23,6 +25,7 @@ class RegisterState extends State<RegisterScreen> {
     }
 
     try {
+      //El controlador valida y registra en Firebase.
       await _authService.registroConEmail(
         emailController.text.trim(),
         passwordController.text.trim(),
@@ -31,7 +34,7 @@ class RegisterState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('¡Cuenta UNIMETANA creada con éxito!')),
       );
-      Navigator.pop(context);
+
     } catch (e) {
       String mensajeError = e.toString().replaceAll('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,6 +44,13 @@ class RegisterState extends State<RegisterScreen> {
         ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -112,6 +122,7 @@ class RegisterState extends State<RegisterScreen> {
                     // Campo Correo
                     TextField(
                       controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         labelText: 'Correo Institucional',
                         prefixIcon: const Icon(Icons.email_outlined),
