@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'widgets/banner.dart';
 import 'widgets/featured_section.dart';
 import 'widgets/cta_section.dart';
-import '../widgets_generales/header_gen.dart'; // Asegúrate de que la ruta a tu HeaderGen sea correcta
-
-// La mayoria de los botones de la homepage llevan a la pantalla del buscador cuando la añadan hay que arreglar esos botones
+import '../widgets_generales/header_gen.dart';
+import '../botones/botones.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -13,11 +12,15 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: const CustomHeader(), 
+      appBar: const CustomHeader(),
       body: SingleChildScrollView(
         child: Column(
           children: const [
             Hbanner(),
+
+            // AGREGAMOS EL WIDGET AQUÍ
+            Botones(),
+
             FeaturedSection(
               title: 'Paquetes Destacados',
               isAccommodation: false,
