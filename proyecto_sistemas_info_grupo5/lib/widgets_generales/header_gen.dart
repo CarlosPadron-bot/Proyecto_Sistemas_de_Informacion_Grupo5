@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:proyecto_sistemas_info_grupo5/login/auth_wrapper.dart';
 import '../login/login_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 
@@ -9,23 +8,25 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 1, // Añade una leve sombra/borde inferior elegante
+      backgroundColor: const Color(0xFF009933),
+      elevation: 2,
       automaticallyImplyLeading:
           false, // Evita que Flutter ponga una flecha de volver atrás automática
 
-      // LADO IZQ: Logo y Nombre
+      // Logo y Nombre
       title: Row(
         children: [
           Image.asset(
             'assets/logo_rutas.png',
-            height: 35,
+            height: 60,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.flight_takeoff, color: Colors.white),
           ),
           const SizedBox(width: 10),
           const Text(
             'RutasVzla',
             style: TextStyle(
-              color: Color(0xFF009933),
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
@@ -33,9 +34,9 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
 
-      // LADO DERECHO: Botones de acciones
+      // Botones de acciones
       actions: [
-        // Botón de Inicio (Regresar a la pag principal)
+        // Botón de Inicio
         TextButton.icon(
           onPressed: () {
             // Remueve todas las pantallas anteriores de la pila y redirige a la HomePage de forma limpia
@@ -45,16 +46,20 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               (Route<dynamic> route) => false,
             );
           },
-          icon: const Icon(Icons.home, color: Colors.grey, size: 20),
+          icon: const Icon(Icons.home,
+              color: Color.fromARGB(255, 255, 255, 255), size: 20),
           label: const Text(
             'Inicio',
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: Color.fromARGB(255, 255, 255, 255),
+                fontWeight: FontWeight.w600),
           ),
         ),
 
         // Botón de Buscador
         IconButton(
-          icon: const Icon(Icons.search, color: Colors.grey),
+          icon: const Icon(Icons.search,
+              color: Color.fromARGB(255, 255, 255, 255)),
           onPressed: () {
             // Aquí irá la lógica para abrir el buscador o ir a la pantalla de búsqueda
             print("Buscar presionado");
@@ -73,7 +78,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF009933), // Tu verde corporativo
+              backgroundColor: const Color(0xFF009933),
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(

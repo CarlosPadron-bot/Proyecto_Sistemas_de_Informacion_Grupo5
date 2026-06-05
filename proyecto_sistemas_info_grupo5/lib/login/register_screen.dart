@@ -14,14 +14,14 @@ class RegisterState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final Auth _authService = Auth();
-  
+
   String _rolSeleccionado = 'Viajero';
 
   void _handleRegister() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, rellena todos los campos.')),
       );
@@ -38,8 +38,9 @@ class RegisterState extends State<RegisterScreen> {
       if (mounted) {
         // 1. Avisamos al usuario que se creó la cuenta
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Cuenta UNIMETANA creada con éxito! 🌱')),
-        );  
+          const SnackBar(
+              content: Text('¡Cuenta UNIMETANA creada con éxito! :D')),
+        );
 
         // 2. Evaluamos el rol para redirigir a la pantalla correspondiente
         if (_rolSeleccionado == 'Operador') {
@@ -54,7 +55,6 @@ class RegisterState extends State<RegisterScreen> {
           );
         }
       }
-
     } catch (e) {
       String mensajeError = e.toString().replaceAll('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -173,10 +173,10 @@ class RegisterState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
-                      value: _rolSeleccionado,
+                      initialValue: _rolSeleccionado,
                       dropdownColor: Colors.white,
                       decoration: InputDecoration(
                         labelText: 'Tipo de Usuario / Rol',
@@ -191,9 +191,11 @@ class RegisterState extends State<RegisterScreen> {
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: 'Viajero', child: Text('Viajero / Estudiante')),
+                            value: 'Viajero',
+                            child: Text('Viajero / Estudiante')),
                         DropdownMenuItem(
-                            value: 'Operador', child: Text('Operador Turístico')),
+                            value: 'Operador',
+                            child: Text('Operador Turístico')),
                       ],
                       onChanged: (nuevoValor) {
                         setState(() {
@@ -201,7 +203,7 @@ class RegisterState extends State<RegisterScreen> {
                         });
                       },
                     ),
-                    
+
                     const SizedBox(height: 30),
 
                     // Botón de Acción

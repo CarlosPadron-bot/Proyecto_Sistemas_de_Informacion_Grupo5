@@ -135,8 +135,9 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                         prefixText: '\$ '),
                     validator: (v) {
                       if (v!.isEmpty) return 'Campo obligatorio';
-                      if (double.tryParse(v) == null)
+                      if (double.tryParse(v) == null) {
                         return 'Ingrese un número válido';
+                      }
                       return null;
                     },
                   ),

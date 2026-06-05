@@ -13,9 +13,9 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: const CustomHeader(),
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Column(
-          children: const [
+          children: [
             Hbanner(),
 
             // AGREGAMOS EL WIDGET AQUÍ
