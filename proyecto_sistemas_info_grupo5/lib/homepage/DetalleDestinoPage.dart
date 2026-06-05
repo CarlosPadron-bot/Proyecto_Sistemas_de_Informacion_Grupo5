@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets_generales/header_gen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../login/login_screen.dart';
+import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
@@ -330,38 +331,117 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00B14F),
+                  backgroundColor: const Color(0xFF00B14F), // Verde de EcoRutas
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
                 onPressed: () {
-                  // Verifica si está logueado
+                  // Verificar Autenticación obligatoria primero
                   final usuarioActual = FirebaseAuth.instance.currentUser;
 
                   if (usuarioActual == null) {
-                    // Si la persona no está logueada se muestra un aviso y redirigire a la pantalla de Login
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                            'Debes iniciar sesión para poder solicitar una reserva :)'),
+                            'Debes iniciar sesión para poder adquirir un paquete. :)'),
                         backgroundColor: Colors.orangeAccent,
                       ),
                     );
-
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const LoginScreen()),
                     );
-                  } else {
-                    // si ya esta logueado no para nada
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Procesando solicitud... '),
-                      ),
-                    );
+                    return;
                   }
+
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) => PaypalCheckoutView(
+                        sandboxMode: true,
+
+                        clientId:
+                            "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL",
+                        secretKey:
+                            "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp",
+
+                        // Detalles de la transacción
+                        transactions: [
+                          {
+                            "amount": {
+                              "total": total.toStringAsFixed(2),
+                              "currency": "USD",
+                              "details": {
+                                "subtotal": total.toStringAsFixed(2),
+                                "shipping": "0.00",
+                                "shipping_discount": "0.00"
+                              }
+                            },
+                            "description":
+                                "Compra de paquete turístico: ${widget.title} para $_cantidadViajeros viajeros. 🌱",
+                            "item_list": {
+                              "items": [
+                                {
+                                  "name": widget.title,
+                                  "quantity": _cantidadViajeros.toString(),
+                                  "price": precioIndividual.toStringAsFixed(2),
+                                  "currency": "USD"
+                                }
+                              ],
+                            }
+                          }
+                        ],
+                        note:
+                            "Contacta con EcoRutas para cualquier duda sobre tu itinerario.",
+
+                        // Callback si el pago se procesa correctamente
+                        onSuccess: (Map params) async {
+                          print("onSuccess: $params");
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('¡Pago y Reserva Exitosa! :)'),
+                              content: Text(
+                                  'Tu pago por \$$total USD ha sido procesado con éxito.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Excelente'),
+                                )
+                              ],
+                            ),
+                          );
+                        },
+
+                        // Callback si ocurre un error inesperado
+                        onError: (error) {
+                          print("Error en pasarela: $error");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content:
+                                  Text('Ocurrió un error con PayPal: $error'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        },
+
+                        // Callback si el usuario cierra el WebView de PayPal sin pagar
+                        onCancel: () {
+                          print("El usuario canceló el pago");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Pago cancelado por el usuario.'),
+                              backgroundColor: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
                 },
                 child: const Text(
                   'Comprar Paquete',
