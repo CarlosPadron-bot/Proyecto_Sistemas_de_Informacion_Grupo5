@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 
 class CtaSection extends StatelessWidget {
   const CtaSection({Key? key}) : super(key: key);
@@ -25,7 +26,11 @@ class CtaSection extends StatelessWidget {
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
-              // Navegar a /register
+              // Navegar a la pantalla de registro para operadores turísticos
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RegisterScreen()),
+              );
             },
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.green[600],

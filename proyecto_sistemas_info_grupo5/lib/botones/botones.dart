@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:proyecto_sistemas_info_grupo5/homepage/cargar_destino_page.dart';
+import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
+import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 
 class Botones extends StatelessWidget {
   const Botones({Key? key}) : super(key: key);
@@ -83,6 +86,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -138,59 +148,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VistaOperadorScreen(),
+                      builder: (context) => const CargarDestinoPage(),
                     ),
                   );
                 } else {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VistaViajeroScreen(),
+                      builder: (context) => const HomePage(),
                     ),
                   );
                 }
               },
               child: const Text('Ingresar', style: TextStyle(fontSize: 16)),
             ),
+            const SizedBox(height: 15),
+            // Redirecciona al registro si no tiene cuenta
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                );
+              },
+              child: Text(
+                '¿No tienes cuenta? Regístrate aquí',
+                style: TextStyle(
+                  color: widget.rol == 'Operador' ? Colors.blueAccent : Colors.orangeAccent,
+                ),
+              ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// --- VISTAS FINALES SIMULADAS ---
-
-class VistaOperadorScreen extends StatelessWidget {
-  const VistaOperadorScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Panel de Operador')),
-      body: const Center(
-        child: Text(
-          'Aquí se muestran TUS PAQUETES REGISTRADOS 📦',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}
-
-class VistaViajeroScreen extends StatelessWidget {
-  const VistaViajeroScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Explorar Viajes')),
-      body: const Center(
-        child: Text(
-          'Aquí se muestran los PAQUETES QUE QUIERES COMPRAR ✈️',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
         ),
       ),
     );
