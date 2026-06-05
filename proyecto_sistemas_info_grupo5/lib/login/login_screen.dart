@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
 
@@ -39,19 +40,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
+      // Intentar iniciar sesión en Firebase
       await _authService.loginConEmail(email, password);
 
-      // El cambio de pantalla lo hace el auth_whapper automaticamente si las credenciales son correctas.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Bienvenido a EcoRutas!')),
-      );
+      // Si la autenticación es exitosa se redirige a la HomePage
+      if (mounted) {
+        Navigator.pushReplacement(
+          // Se usa pushReplacement para que no puedan volver al login con el botón de atrás.
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error al iniciar sesión: Verifique sus credenciales.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      // Si Firebase devuelve un error como contraseña incorrecta o si no existe un usuario.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al iniciar sesión: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -81,7 +90,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   children: [
                     TextButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const HomePage()),
+                        );
+                      },
                       icon:
                           const Icon(Icons.home, color: Colors.white, size: 20),
                       label: const Text('Inicio',

@@ -8,66 +8,8 @@ class Botones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-      child: Column(
-        children: [
-          const Text(
-            'Selecciona tu rol para ingresar:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              // Botón de Operador
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.storefront),
-                  label: const Text('Operador'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  onPressed: () {
-                    // Llevamos al Login pasando el rol de 'Operador'
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const LoginScreen(rol: 'Operador'),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 15),
-              // Botón de Viajero
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.flight_takeoff),
-                  label: const Text('Viajero'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  onPressed: () {
-                    // Llevamos al Login pasando el rol de 'Viajero'
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(rol: 'Viajero'),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return const SizedBox
+        .shrink(); //Esto se puso para que no se muestren los botones de demostración de la página principal
   }
 }
 
@@ -168,13 +110,16 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const RegisterScreen()),
                 );
               },
               child: Text(
                 '¿No tienes cuenta? Regístrate aquí',
                 style: TextStyle(
-                  color: widget.rol == 'Operador' ? Colors.blueAccent : Colors.orangeAccent,
+                  color: widget.rol == 'Operador'
+                      ? Colors.blueAccent
+                      : Colors.orangeAccent,
                 ),
               ),
             ),

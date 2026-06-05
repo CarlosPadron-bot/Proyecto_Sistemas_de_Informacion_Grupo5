@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:proyecto_sistemas_info_grupo5/login/auth_wrapper.dart';
 import '../login/login_screen.dart';
-import '../homepage/home_page.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   const CustomHeader({Key? key}) : super(key: key);
@@ -10,8 +11,9 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 1, // Añade una leve sombra/borde inferior elegante
-      automaticallyImplyLeading: false, // Evita que Flutter ponga una flecha de volver atrás automática
-      
+      automaticallyImplyLeading:
+          false, // Evita que Flutter ponga una flecha de volver atrás automática
+
       // LADO IZQ: Logo y Nombre
       title: Row(
         children: [
@@ -30,19 +32,18 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
         ],
       ),
-      
+
       // LADO DERECHO: Botones de acciones
       actions: [
         // Botón de Inicio (Regresar a la pag principal)
         TextButton.icon(
           onPressed: () {
-            // Verifica si ya estás en la HomePage para no duplicar la pantalla en el stack
-            if (ModalRoute.of(context)?.settings.name != '/') {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => false,
-              );
-            }
+            // Remueve todas las pantallas anteriores de la pila y redirige a la HomePage de forma limpia
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePage()),
+              (Route<dynamic> route) => false,
+            );
           },
           icon: const Icon(Icons.home, color: Colors.grey, size: 20),
           label: const Text(
@@ -50,7 +51,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
           ),
         ),
-        
+
         // Botón de Buscador
         IconButton(
           icon: const Icon(Icons.search, color: Colors.grey),
@@ -60,7 +61,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           },
         ),
         const SizedBox(width: 4),
-        
+
         // Botón de Inicio de Sesión
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
