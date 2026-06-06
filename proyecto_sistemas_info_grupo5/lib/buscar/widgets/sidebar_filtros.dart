@@ -8,105 +8,358 @@ class SidebarFiltros extends StatefulWidget {
 }
 
 class _SidebarFiltrosState extends State<SidebarFiltros> {
-  // Variables de estado para los sliders
-  double maxPresupuesto = 500;
-  String tipoBusqueda = 'Todo';
+  // ================= ESTADO DE LOS FILTROS =================
+  String tipoBusqueda = 'Todo'; // Opciones: Todo, Paquetes Turisticos, Alojamientos
+  double presupuestoMax = 500.0;
+  String estadoPais = 'Todos';
+  double calificacionMin = 1.5;
+  bool soloTransportePublico = false;
+
+  final List<String> estadosVenezuela = ['Todos', 'Mérida', 'Caracas', 'Falcón', 'Sucre', 'Bolívar'];
+
+  // ================= ESTADO DE LA CALCULADORA =================
+  int numeroPersonas = 10;
+  int diasViaje = 14;
+  double costoAlojamiento = 100.0;
+  double costoComida = 50.0;
+  double costoTransporte = 200.0;
+  double costoActividades = 100.0;
+
+  // Cálculos matemáticos
+  double get costoPorPersona {
+    return (costoAlojamiento * diasViaje) +
+           (costoComida * diasViaje) +
+           costoTransporte +
+           costoActividades;
+  }
+
+  double get costoTotal => costoPorPersona * numeroPersonas;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Tarjeta de Calculadora de Presupuesto
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.calculate, color: Colors.green),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text('Calculadora de Presupuesto', 
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Número de personas: 1'),
-                  Slider(value: 1, min: 1, max: 10, divisions: 9, activeColor: Colors.green, onChanged: (val) {}),
-                  
-                  const Text('Días de viaje: 1'),
-                  Slider(value: 1, min: 1, max: 30, activeColor: Colors.green, onChanged: (val) {}),
-                  
-                  const Divider(),
-                  const Text('Total del viaje:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const Text('\$101', style: TextStyle(fontSize: 24, color: Colors.green, fontWeight: FontWeight.bold)),
-                ],
-              ),
+    return Container(
+      width: 320, // Ancho fijo de la barra izquierda
+      padding: const EdgeInsets.all(16.0),
+      color: Colors.white,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. SECCIÓN DE FILTROS
+            _buildFiltrosSection(),
+            
+            const Divider(height: 40, thickness: 1, color: Colors.black12),
+            
+            // 2. SECCIÓN DE CALCULADORA DE PRESUPUESTO
+            _buildCalculadoraSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // WIDGET: SECCIÓN DE FILTROS
+  // ==========================================================
+  Widget _buildFiltrosSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título Filtros
+        const Row(
+          children: [
+            Icon(Icons.filter_alt_outlined, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Filtros', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Tipo de Búsqueda
+        const Text('Tipo de Búsqueda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        _buildTipoBusquedaButton('Todo'),
+        _buildTipoBusquedaButton('Paquetes Turisticos'),
+        _buildTipoBusquedaButton('Alojamientos'),
+        const SizedBox(height: 20),
+
+        // Presupuesto Máximo
+        Text('Presupuesto Máximo: \$${presupuestoMax.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Slider(
+          value: presupuestoMax,
+          min: 10,
+          max: 1000, // Ajusta según necesites
+          activeColor: Colors.green,
+          onChanged: (value) => setState(() => presupuestoMax = value),
+        ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('\$10', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('\$1000', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Estado del País
+        const Text('Estado del País', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: estadoPais,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
+              items: estadosVenezuela.map((String estado) {
+                return DropdownMenuItem<String>(
+                  value: estado,
+                  child: Text(estado, style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) setState(() => estadoPais = newValue);
+              },
             ),
           ),
-          const SizedBox(height: 16),
-          
-          // Sección de Filtros
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+        ),
+        const SizedBox(height: 20),
+
+        // Calificación Mínima
+        Text('Calificación Mínima: ${calificacionMin.toStringAsFixed(1)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Slider(
+          value: calificacionMin,
+          min: 0,
+          max: 5,
+          divisions: 10,
+          activeColor: Colors.green,
+          inactiveColor: Colors.grey.shade800,
+          onChanged: (value) => setState(() => calificacionMin = value),
+        ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Todas', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('5 ★', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Checkbox Transporte
+        Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: soloTransportePublico,
+                activeColor: Colors.green,
+                onChanged: (value) => setState(() => soloTransportePublico = value ?? false),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('Solo con transporte público', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Botón Limpiar Filtros
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey.shade100,
+              foregroundColor: Colors.black87,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              // Reiniciar filtros
+              setState(() {
+                tipoBusqueda = 'Todo';
+                presupuestoMax = 500.0;
+                estadoPais = 'Todos';
+                calificacionMin = 1.5;
+                soloTransportePublico = false;
+              });
+            },
+            child: const Text('Limpiar Filtros', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper para los botones de tipo de búsqueda
+  Widget _buildTipoBusquedaButton(String titulo) {
+    bool isSelected = tipoBusqueda == titulo;
+    return GestureDetector(
+      onTap: () => setState(() => tipoBusqueda = titulo),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.green : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          titulo,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // WIDGET: SECCIÓN DE CALCULADORA
+  // ==========================================================
+  Widget _buildCalculadoraSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título Calculadora
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.calculate_outlined, color: Colors.green, size: 20),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.filter_alt, color: Colors.green),
-                      SizedBox(width: 8),
-                      Text('Filtros', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Tipo de Búsqueda'),
-                  const SizedBox(height: 8),
-                  // Botones de tipo (Todo, Paquetes, Alojamientos)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Text('Todo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                  ),
-                  // Agrega aquí los otros botones (Paquetes, Alojamientos) con estilo gris
-                  
-                  const SizedBox(height: 16),
-                  const Text('Presupuesto Máximo'),
-                  Slider(
-                    value: maxPresupuesto, 
-                    min: 10, 
-                    max: 1000, 
-                    activeColor: Colors.green,
-                    onChanged: (val) {
-                      setState(() { maxPresupuesto = val; });
-                    }
-                  ),
-                  
-                  // 
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {},
-                      child: const Text('Limpiar Filtros', style: TextStyle(color: Colors.black)),
-                    ),
-                  )
+                  Text('Calculadora de\nPresupuesto', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.1)),
+                  Text('Planifica tu viaje', style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
-          )
-        ],
-      ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Sliders de Configuración
+        _buildSliderConIcono(Icons.people_outline, 'Número de personas: $numeroPersonas', numeroPersonas.toDouble(), 1, 30, (v) => setState(() => numeroPersonas = v.toInt())),
+        _buildSliderConIcono(Icons.calendar_today_outlined, 'Días de viaje: $diasViaje', diasViaje.toDouble(), 1, 30, (v) => setState(() => diasViaje = v.toInt())),
+        
+        const SizedBox(height: 10),
+        const Text('Costos estimados por día:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        _buildSliderSimple('Alojamiento por noche: \$${costoAlojamiento.toInt()}', costoAlojamiento, 0, 500, (v) => setState(() => costoAlojamiento = v)),
+        _buildSliderSimple('Comida por día: \$${costoComida.toInt()}', costoComida, 0, 200, (v) => setState(() => costoComida = v)),
+
+        const SizedBox(height: 10),
+        const Text('Costos únicos:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        _buildSliderSimple('Transporte: \$${costoTransporte.toInt()}', costoTransporte, 0, 1000, (v) => setState(() => costoTransporte = v)),
+        _buildSliderSimple('Actividades: \$${costoActividades.toInt()}', costoActividades, 0, 500, (v) => setState(() => costoActividades = v)),
+
+        const SizedBox(height: 20),
+
+        // Cesta Total (Caja Verde)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            border: Border.all(color: Colors.green.shade200),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Por persona:', style: TextStyle(fontSize: 13)),
+                  Text('\$${costoPorPersona.toInt()}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Total del viaje:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text('\$${costoTotal.toInt()}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Consejo (Caja Azul)
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('💡 ', style: TextStyle(fontSize: 14)),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(fontSize: 11, color: Colors.blue.shade800, height: 1.3),
+                    children: const [
+                      TextSpan(text: 'Consejo: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      TextSpan(text: 'Los precios en nuestra plataforma están verificados por la comunidad para mayor transparencia.'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helpers para los sliders de la calculadora
+  Widget _buildSliderConIcono(IconData icono, String titulo, double valor, double min, double max, Function(double) onChanged) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icono, size: 16, color: Colors.black54),
+            const SizedBox(width: 8),
+            Text(titulo, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+        Slider(
+          value: valor,
+          min: min,
+          max: max,
+          activeColor: Colors.green,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliderSimple(String titulo, double valor, double min, double max, Function(double) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+        Slider(
+          value: valor,
+          min: min,
+          max: max,
+          activeColor: Colors.green,
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }

@@ -37,16 +37,15 @@ class FeaturedSection extends StatelessWidget {
                   width: 280, // Ancho de la tarjeta
                   margin: const EdgeInsets.only(right: 16.0),
                   child: ItemCard(
-                    imageUrl: 'url_aqui',
-                    location: 'Mérida, Mérida', // Reemplazar con datos
-                    title: isAccommodation ? 'Posada El Valle' : 'Tour Páramo',
-                    subtitle: isAccommodation ? 'Posada • hasta 4 personas' : '3 días • hasta 10 personas',
-                    price: isAccommodation ? '25' : '120',
-                    priceSuffix: isAccommodation ? '/noche' : '/persona',
-                    rating: '4.8',
-                    reviewCount: '24',
-                  ),
-                );
+                    ubicacion: 'Mérida, Mérida', // Reemplaza 'location'
+                    titulo: isAccommodation ? 'Posada El Valle' : 'Tour Páramo', // Reemplaza 'title'
+                    infoExtra: isAccommodation ? 'Posada • hasta 4 personas' : '3 días • hasta 10 personas', // Reemplaza 'subtitle'
+                    precio: isAccommodation ? '25' : '120', // Reemplaza 'price'
+                    tipoPrecio: isAccommodation ? '/noche' : '/persona', // Reemplaza 'priceSuffix'
+                    calificacion: 4.8, // Reemplaza 'rating' (¡Va sin comillas porque es double!)
+                    resenas: 24, // Reemplaza 'reviewCount' (¡Va sin comillas porque es int!)
+                    categoria: isAccommodation ? 'Posada' : 'Paquete', // ¡Faltaba este dato obligatorio!
+                  ),                );
               },
             ),
           ),
