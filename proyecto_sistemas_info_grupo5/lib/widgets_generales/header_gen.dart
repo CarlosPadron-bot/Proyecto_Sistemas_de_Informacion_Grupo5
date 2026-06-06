@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
+import '../buscar/buscar_page.dart'; 
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   const CustomHeader({Key? key}) : super(key: key);
@@ -57,15 +58,21 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
 
         // Botón de Buscador
-        IconButton(
-          icon: const Icon(Icons.search,
-              color: Color.fromARGB(255, 255, 255, 255)),
+        TextButton.icon( // Lo cambié a TextButton.icon para que diga "Buscar" al lado del ícono
           onPressed: () {
-            // Aquí irá la lógica para abrir el buscador o ir a la pantalla de búsqueda
-            print("Buscar presionado");
+            // Navega a la página de búsqueda
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BuscarPage()),
+            );
           },
+          icon: const Icon(Icons.search, color: Colors.grey, size: 20),
+          label: const Text(
+            'Buscar',
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+          ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 16), // Un poco más de espacio antes del botón verde
 
         // Botón de Inicio de Sesión
         Padding(

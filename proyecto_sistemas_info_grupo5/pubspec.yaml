@@ -13,6 +13,7 @@ dependencies:
   firebase_auth: ^6.5.2
   cloud_firestore: ^6.5.0
   flutter_paypal_payment: ^1.0.8
+  firebase_core: ^4.10.0
 
 dev_dependencies:
   flutter_test:
