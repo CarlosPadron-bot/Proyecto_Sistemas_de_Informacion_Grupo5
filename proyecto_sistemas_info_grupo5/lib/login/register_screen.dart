@@ -13,8 +13,9 @@ class RegisterScreen extends StatefulWidget {
 class RegisterState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController usernameController =
+      TextEditingController(); // Nuevo
   final Auth _authService = Auth();
-
   String _rolSeleccionado = 'Viajero';
 
   void _handleRegister() async {
@@ -31,18 +32,20 @@ class RegisterState extends State<RegisterScreen> {
     try {
       //El controlador valida y registra en Firebase.
       await _authService.registroConEmail(
-        emailController.text.trim(),
-        passwordController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+        username: usernameController.text.trim(),
+        rol: _rolSeleccionado,
       );
 
       if (mounted) {
-        // 1. Avisamos al usuario que se creó la cuenta
+        // Avisa al usuario que se creó la cuenta
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('¡Cuenta UNIMETANA creada con éxito! :D')),
         );
 
-        // 2. Evaluamos el rol para redirigir a la pantalla correspondiente
+        // Evaluamos el rol para redirigir a la pantalla correspondiente
         if (_rolSeleccionado == 'Operador') {
           Navigator.pushReplacement(
             context,
@@ -138,6 +141,24 @@ class RegisterState extends State<RegisterScreen> {
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     const SizedBox(height: 30),
+
+                    // Campo Usuario
+                    TextFormField(
+                      controller: usernameController,
+                      keyboardType: TextInputType.text,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre de Usuario',
+                        prefixIcon: const Icon(Icons.person),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF00B14F), width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
                     // Campo Correo
                     TextField(

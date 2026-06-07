@@ -1,30 +1,41 @@
 //Esta clase es el servicio que se comunicará con Firebase Auth.
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Auth {
-  // Se instancia el Firebase Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // El Stream sirve para escuchar si el usuario ya está logueado o no para saber si aparecer en
-  //la pantalla de inicio o en la de inicio de sesión
-  //Firebase esta avisando si el usuario esta logueado o no
-  //entonces al abrir la app, si encuentra un token guardado, devuelve el usuario
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Función para Iniciar Sesión (Ahora funciona solo para correo Unimet)
   Future<UserCredential?> registroConEmail(
-      String email, String password) async {
+      {required String email,
+      required String password,
+      required String username,
+      required String rol}) async {
     try {
-      // Validación previa de dominio
+      // Validación de dominio
       if (!email.toLowerCase().endsWith('@correo.unimet.edu.ve')) {
         throw Exception(
             'Solo se permiten registros con correos de la Universidad Metropolitana (@correo.unimet.edu.ve).');
       }
+
+      // Crear usuario en Firebase Auth
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Guardar datos adicionales en Firestore usando el UID recién creado
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(userCredential.user!.uid)
+          .set({
+        'username': username,
+        'rol': rol,
+        'email': email,
+      });
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       print("Error nativo en Registro Firebase: ${e.code}");
@@ -37,19 +48,16 @@ class Auth {
 
   Future<UserCredential?> loginConEmail(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      return await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential;
-      //Aquí se manejan los errores como la contraseña incorrecta.
     } on FirebaseAuthException catch (e) {
       print("Error en Firebase: ${e.code}");
       rethrow;
     }
   }
 
-  // Función para cerrar sesión
   Future<void> cerrarSesion() async {
     await _auth.signOut();
   }

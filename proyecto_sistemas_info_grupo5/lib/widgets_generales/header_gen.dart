@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
-import '../buscar/buscar_page.dart'; 
+import '../buscar/buscar_page.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   const CustomHeader({Key? key}) : super(key: key);
@@ -58,7 +60,8 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
 
         // Botón de Buscador
-        TextButton.icon( // Lo cambié a TextButton.icon para que diga "Buscar" al lado del ícono
+        TextButton.icon(
+          // Lo cambié a TextButton.icon para que diga "Buscar" al lado del ícono
           onPressed: () {
             // Navega a la página de búsqueda
             Navigator.push(
@@ -66,18 +69,34 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               MaterialPageRoute(builder: (context) => const BuscarPage()),
             );
           },
-          icon: const Icon(Icons.search, color: Colors.grey, size: 20),
+          icon: const Icon(Icons.search,
+              color: Color.fromARGB(255, 255, 255, 255), size: 20),
           label: const Text(
             'Buscar',
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: Color.fromARGB(255, 255, 255, 255),
+                fontWeight: FontWeight.w600),
           ),
         ),
-        const SizedBox(width: 16), // Un poco más de espacio antes del botón verde
+        const SizedBox(
+            width: 16), // Un poco más de espacio antes del botón verde
 
         // Botón de Inicio de Sesión
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
-          child: ElevatedButton(
+          child: _buildAuthButton(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAuthButton(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Si no hay sesión, muestra el botón de "Iniciar Sesión"
+        if (!snapshot.hasData) {
+          return ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
@@ -88,6 +107,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               backgroundColor: const Color(0xFF009933),
               foregroundColor: Colors.white,
               elevation: 0,
+              side: const BorderSide(color: Colors.white, width: 1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -97,9 +117,56 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               'Iniciar Sesión',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-          ),
-        ),
-      ],
+          );
+        }
+
+        // Si hay sesión se busca el rol y nombre en Firestore
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(snapshot.data!.uid)
+              .get(),
+          builder: (context, userSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              );
+            }
+
+            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              return const Icon(Icons.error, color: Colors.white);
+            }
+
+            var userData = userSnapshot.data!.data() as Map<String, dynamic>;
+            String username = userData['username'] ?? 'Usuario';
+            String rol = userData['rol'] ?? 'Viajero';
+
+            // Botón con el nombre y el rol
+            return ElevatedButton.icon(
+              onPressed: () {
+                // AQUÍ VA LA LÓGICA PARA EL PERFIL DE USUARIO 👀👀👀👀👀
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF009933),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.person),
+              label: Text(
+                "$username ($rol)",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

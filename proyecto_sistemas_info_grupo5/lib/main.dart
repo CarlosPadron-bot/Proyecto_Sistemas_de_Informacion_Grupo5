@@ -33,7 +33,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF009933)),
         useMaterial3: true,
       ),
-      home: AuthWrapper(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => AuthWrapper(),
+      },
     );
   }
 }
