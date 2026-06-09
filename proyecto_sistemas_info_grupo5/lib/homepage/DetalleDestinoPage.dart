@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../widgets_generales/header_gen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../login/login_screen.dart';
-import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:html' as html;
 
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
@@ -34,7 +36,101 @@ class DetalleDestinoPage extends StatefulWidget {
 
 class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
   int _cantidadViajeros = 1;
-  DateTime? _fechaSeleccionada;
+  bool _cargandoPago = false;
+
+  Future<void> _iniciarPagoPayPal(double totalAmount) async {
+    setState(() => _cargandoPago = true);
+
+    const String clientId =
+        "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL";
+    const String secretKey =
+        "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp";
+
+    final String baseUrl = html.window.location.origin;
+    final String returnUrl = "$baseUrl/#/success";
+    final String cancelUrl = "$baseUrl/#/";
+    try {
+      // Obtener el Token de acceso de PayPal
+      final authTokenResponse = await http.post(
+        Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
+        headers: {
+          'Authorization':
+              'Basic ' + base64Encode(utf8.encode('$clientId:$secretKey')),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {'grant_type': 'client_credentials'},
+      );
+
+      if (authTokenResponse.statusCode != 200) {
+        throw Exception("Error de autenticación con PayPal");
+      }
+
+      final String accessToken =
+          jsonDecode(authTokenResponse.body)['access_token'];
+
+      // Crear la Orden de pago
+      final orderResponse = await http.post(
+        Uri.parse('https://api-m.sandbox.paypal.com/v2/checkout/orders'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          "intent": "CAPTURE",
+          "purchase_units": [
+            {
+              "amount": {
+                "currency_code": "USD",
+                "value": totalAmount.toStringAsFixed(2)
+              },
+              "description": "Compra de paquete turístico: ${widget.title}"
+            }
+          ],
+          "application_context": {
+            "return_url": returnUrl,
+            "cancel_url": cancelUrl,
+            "user_action": "PAY_NOW"
+          }
+        }),
+      );
+
+      if (orderResponse.statusCode != 201) {
+        throw Exception("No se pudo crear la orden de pago");
+      }
+
+      final data = jsonDecode(orderResponse.body);
+
+      // Buscar el link de aprobación enviado por PayPal
+      String approveUrl = "";
+      for (var link in data['links']) {
+        if (link['rel'] == 'approve') {
+          approveUrl = link['href'];
+          break;
+        }
+      }
+
+      // Cambia la dirección de la pestaña actual en lugar de usar url_launcher
+      if (approveUrl.isNotEmpty) {
+        _mostrarSnackBar('Redirigiendo a PayPal...', Colors.blue);
+
+        await Future.delayed(const Duration(seconds: 1));
+
+        // Cambia la locación de la ventana nativa de la web
+        html.window.location.href = approveUrl;
+        return;
+      }
+    } catch (e) {
+      _mostrarSnackBar('Ocurrió un error con PayPal: $e', Colors.redAccent);
+    } finally {
+      setState(() => _cargandoPago = false);
+    }
+  }
+
+  void _mostrarSnackBar(String mensaje, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje), backgroundColor: color),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +149,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Layout principal de dos columnas
                 if (esPantallaAncha)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,12 +176,10 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     );
   }
 
-  // Widget columna izquierda
   Widget _buildContenidoIzquierdo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Imagen Principal
         Container(
           height: 420,
           width: double.infinity,
@@ -100,8 +193,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
         ),
         const SizedBox(height: 20),
-
-        // Título, ubicación y reseñas
         Text(
           widget.title,
           style: const TextStyle(
@@ -149,8 +240,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ],
         ),
         const SizedBox(height: 30),
-
-        // Descripción
         _buildCuadroInformativo(
           titulo: 'Descripción',
           child: Text(
@@ -160,8 +249,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
         ),
         const SizedBox(height: 20),
-
-        // Que incluye
         _buildCuadroInformativo(
           titulo: '¿Qué incluye?',
           child: GridView.count(
@@ -183,8 +270,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
         ),
         const SizedBox(height: 20),
-
-        // Ubicación
         _buildCuadroInformativo(
           titulo: 'Ubicación',
           child: Column(
@@ -215,8 +300,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
         ),
         const SizedBox(height: 20),
-
-        // Reseñas
         _buildCuadroInformativo(
           titulo: 'Reseñas (0)',
           child: const Padding(
@@ -231,7 +314,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     );
   }
 
-  // Columna derecha
   Widget _buildCajaReserva(double precioIndividual, double total) {
     return Card(
       elevation: 3,
@@ -331,125 +413,43 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00B14F), // Verde de EcoRutas
+                  backgroundColor: const Color(0xFF00B14F),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
-                onPressed: () {
-                  // Verificar Autenticación obligatoria primero
-                  final usuarioActual = FirebaseAuth.instance.currentUser;
+                onPressed: _cargandoPago
+                    ? null
+                    : () {
+                        final usuarioActual = FirebaseAuth.instance.currentUser;
 
-                  if (usuarioActual == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Debes iniciar sesión para poder adquirir un paquete. :)'),
-                        backgroundColor: Colors.orangeAccent,
+                        if (usuarioActual == null) {
+                          _mostrarSnackBar(
+                              'Debes iniciar sesión para poder adquirir un paquete. :)',
+                              Colors.orangeAccent);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                          );
+                          return;
+                        }
+
+                        _iniciarPagoPayPal(total);
+                      },
+                child: _cargandoPago
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : const Text(
+                        'Comprar Paquete',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
                       ),
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginScreen()),
-                    );
-                    return;
-                  }
-
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) => PaypalCheckoutView(
-                        sandboxMode: true,
-
-                        clientId:
-                            "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL",
-                        secretKey:
-                            "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp",
-
-                        // Detalles de la transacción
-                        transactions: [
-                          {
-                            "amount": {
-                              "total": total.toStringAsFixed(2),
-                              "currency": "USD",
-                              "details": {
-                                "subtotal": total.toStringAsFixed(2),
-                                "shipping": "0.00",
-                                "shipping_discount": "0.00"
-                              }
-                            },
-                            "description":
-                                "Compra de paquete turístico: ${widget.title} para $_cantidadViajeros viajeros. 🌱",
-                            "item_list": {
-                              "items": [
-                                {
-                                  "name": widget.title,
-                                  "quantity": _cantidadViajeros.toString(),
-                                  "price": precioIndividual.toStringAsFixed(2),
-                                  "currency": "USD"
-                                }
-                              ],
-                            }
-                          }
-                        ],
-                        note:
-                            "Contacta con EcoRutas para cualquier duda sobre tu itinerario.",
-
-                        // Callback si el pago se procesa correctamente
-                        onSuccess: (Map params) async {
-                          print("onSuccess: $params");
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('¡Pago y Reserva Exitosa! :)'),
-                              content: Text(
-                                  'Tu pago por \$$total USD ha sido procesado con éxito.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Excelente'),
-                                )
-                              ],
-                            ),
-                          );
-                        },
-
-                        // Callback si ocurre un error inesperado
-                        onError: (error) {
-                          print("Error en pasarela: $error");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  Text('Ocurrió un error con PayPal: $error'),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        },
-
-                        // Callback si el usuario cierra el WebView de PayPal sin pagar
-                        onCancel: () {
-                          print("El usuario canceló el pago");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pago cancelado por el usuario.'),
-                              backgroundColor: Colors.grey,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Comprar Paquete',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold),
-                ),
               ),
             ),
             const SizedBox(height: 12),
