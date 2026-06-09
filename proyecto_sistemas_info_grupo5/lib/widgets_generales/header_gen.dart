@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 import '../buscar/buscar_page.dart';
+import '../profile/profile_screen.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   const CustomHeader({Key? key}) : super(key: key);
@@ -150,6 +151,11 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             return ElevatedButton.icon(
               onPressed: () {
                 // AQUÍ VA LA LÓGICA PARA EL PERFIL DE USUARIO 👀👀👀👀👀
+                // Navegamos a la pantalla de perfil que acabamos de refactorizar
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,

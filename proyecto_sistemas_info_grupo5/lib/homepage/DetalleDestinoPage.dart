@@ -55,7 +55,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
         Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
         headers: {
           'Authorization':
-              'Basic ' + base64Encode(utf8.encode('$clientId:$secretKey')),
+              'Basic ${base64Encode(utf8.encode('$clientId:$secretKey'))}',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {'grant_type': 'client_credentials'},
