@@ -14,8 +14,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: const Color(0xFF009933),
       elevation: 2,
-      automaticallyImplyLeading:
-          false, // Evita que Flutter ponga una flecha de volver atrás automática
+      automaticallyImplyLeading: false, // Evita la flecha de volver atrás automática
 
       // Logo y Nombre
       title: Row(
@@ -43,46 +42,41 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         // Botón de Inicio
         TextButton.icon(
           onPressed: () {
-            // Remueve todas las pantallas anteriores de la pila y redirige a la HomePage de forma limpia
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const HomePage()),
               (Route<dynamic> route) => false,
             );
           },
-          icon: const Icon(Icons.home,
-              color: Color.fromARGB(255, 255, 255, 255), size: 20),
+          icon: const Icon(Icons.home, color: Colors.white, size: 20),
           label: const Text(
             'Inicio',
             style: TextStyle(
-                color: Color.fromARGB(255, 255, 255, 255),
+                color: Colors.white,
                 fontWeight: FontWeight.w600),
           ),
         ),
 
         // Botón de Buscador
         TextButton.icon(
-          // Lo cambié a TextButton.icon para que diga "Buscar" al lado del ícono
           onPressed: () {
-            // Navega a la página de búsqueda
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const BuscarPage()),
             );
           },
-          icon: const Icon(Icons.search,
-              color: Color.fromARGB(255, 255, 255, 255), size: 20),
+          icon: const Icon(Icons.search, color: Colors.white, size: 20),
           label: const Text(
             'Buscar',
             style: TextStyle(
-                color: Color.fromARGB(255, 255, 255, 255),
+                color: Colors.white,
                 fontWeight: FontWeight.w600),
           ),
         ),
-        const SizedBox(
-            width: 16), // Un poco más de espacio antes del botón verde
+        
+        const SizedBox(width: 16),
 
-        // Botón de Inicio de Sesión
+        // Zona dinámica: Botón de Iniciar Sesión o (Nombre + Salir)
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: _buildAuthButton(context),
@@ -95,7 +89,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Si no hay sesión, muestra el botón de "Iniciar Sesión"
+        // 1. Si NO hay sesión iniciada, muestra el botón de "Iniciar Sesión"
         if (!snapshot.hasData) {
           return ElevatedButton(
             onPressed: () {
@@ -121,13 +115,14 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           );
         }
 
-        // Si hay sesión se busca el rol y nombre en Firestore
+        // 2. Si SÍ hay sesión, busca los datos en Firestore
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('usuarios')
               .doc(snapshot.data!.uid)
               .get(),
           builder: (context, userSnapshot) {
+            // Muestra un indicador de carga mientras lee la base de datos
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
                 width: 20,
@@ -139,36 +134,62 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             }
 
-            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-              return const Icon(Icons.error, color: Colors.white);
+            // Extraemos el nombre. Si hay error o no existe, ponemos 'Usuario' por defecto
+            String username = 'Usuario';
+            if (userSnapshot.hasData && userSnapshot.data!.exists) {
+              var userData = userSnapshot.data!.data() as Map<String, dynamic>;
+              username = userData['username'] ?? 'Usuario';
             }
 
-            var userData = userSnapshot.data!.data() as Map<String, dynamic>;
-            String username = userData['username'] ?? 'Usuario';
-            String rol = userData['rol'] ?? 'Viajero';
-
-            // Botón con el nombre y el rol
-            return ElevatedButton.icon(
-              onPressed: () {
-                // AQUÍ VA LA LÓGICA PARA EL PERFIL DE USUARIO 👀👀👀👀👀
-                // Navegamos a la pantalla de perfil que acabamos de refactorizar
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF009933),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            // Retornamos la fila con el Nombre y el botón de Salir 
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Botón del Nombre (lleva al perfil)
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.person_outline, color: Colors.white, size: 18),
+                  label: Text(
+                    username,
+                    style: const TextStyle(
+                      color: Colors.white, 
+                      fontWeight: FontWeight.w600
+                    ),
+                  ),
                 ),
-              ),
-              icon: const Icon(Icons.person),
-              label: Text(
-                "$username ($rol)",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+                
+                const SizedBox(width: 5),
+
+                // Botón de Salir
+                TextButton.icon(
+                  onPressed: () async {
+                    // 1. Cierra sesión en Firebase
+                    await FirebaseAuth.instance.signOut();
+                    
+                    // 2. Devuelve a la pantalla de Login y borra el historial
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.logout, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Salir',
+                    style: TextStyle(
+                      color: Colors.white, 
+                      fontWeight: FontWeight.w600
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         );

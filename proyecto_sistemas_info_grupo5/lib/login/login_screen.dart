@@ -86,7 +86,20 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Image.asset('assets/logo_rutas.png', height: 60),
+              Row(
+                children: [
+                  Image.asset('assets/logo_rutas.png', height: 60),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'RutasVzla',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
                 Row(
                   children: [
                     TextButton.icon(
@@ -123,139 +136,132 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // Contenido central (Formulario)
+          // Contenido central 
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  Image.asset('assets/ubicacion.png', height: 60),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'Iniciar Sesión',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const Text('Accede a tu cuenta de EcoRutas',
-                      style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 30),
-
-                  // Tarjeta del formulario
-                  Container(
-                    width: 400,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10)
-                      ],
+              // El padding se mueve al Container hijo para que el ScrollView toque los bordes
+              child: Container(
+                width: double.infinity, // Esto empuja la barra a la derecha
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    Image.asset('assets/ubicacion.png', height: 60),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Iniciar Sesión',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text('Email',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        // 3. ASIGNAR CONTROLLER AL CAMPO EMAIL
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            hintText: 'tu@correo.unimet.edu.ve',
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5)),
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 10),
+                    const Text('Accede a tu cuenta de EcoRutas',
+                        style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 30),
+
+                    // Tarjeta del formulario
+                    Container(
+                      width: 400,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10)
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('Email',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          // 3. ASIGNAR CONTROLLER AL CAMPO EMAIL
+                          TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              hintText: 'tu@correo.unimet.edu.ve',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(5)),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text('Contraseña',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        // 4. ASIGNAR CONTROLLER AL CAMPO CONTRASEÑA
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            hintText: '**********',
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5)),
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 10),
+                          const SizedBox(height: 20),
+                          const Text('Contraseña',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          // 4. ASIGNAR CONTROLLER AL CAMPO CONTRASEÑA
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              hintText: '**********',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(5)),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 25),
-                        // 5. ENLAZAR ACCIÓN AL BOTÓN DE LOGUEO
-                        ElevatedButton.icon(
-                          onPressed: _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00B14F),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5)),
+                          const SizedBox(height: 25),
+                          // 5. ENLAZAR ACCIÓN AL BOTÓN DE LOGUEO
+                          ElevatedButton.icon(
+                            onPressed: _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00B14F),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(5)),
+                            ),
+                            icon: const Icon(Icons.login, color: Colors.white),
+                            label: const Text('Iniciar Sesión',
+                                style:
+                                    TextStyle(color: Colors.white, fontSize: 16)),
                           ),
-                          icon: const Icon(Icons.login, color: Colors.white),
-                          label: const Text('Iniciar Sesión',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 16)),
-                        ),
-                        const SizedBox(height: 20),
-                        const Center(
-                            child: Text('Acceso rápido de demostración:',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 12))),
-                        const SizedBox(height: 10),
-                        _buildDemoButton(
-                            'Demo Viajero', Colors.blue[50]!, Colors.blue),
-                        const SizedBox(height: 8),
-                        _buildDemoButton(
-                            'Demo Operador', Colors.purple[50]!, Colors.purple),
-                        const SizedBox(height: 8),
-                        _buildDemoButton(
-                            'Demo Admin', Colors.orange[50]!, Colors.orange),
-                        const SizedBox(height: 20),
-                        Center(
-                          child: RichText(
-                            text: TextSpan(
-                              text: '¿No tienes cuenta? ',
-                              style: const TextStyle(
-                                  color: Colors.black87, fontSize: 14),
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.baseline,
-                                  baseline: TextBaseline.alphabetic,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const RegisterScreen()),
-                                      );
-                                    },
-                                    child: const Text(
-                                      'Regístrate aquí',
-                                      style: TextStyle(
-                                        color: Color(0xFF00B14F),
-                                        fontWeight: FontWeight.bold,
-                                        decoration: TextDecoration.underline,
+                          
+                          const SizedBox(height: 25),
+                          
+                          Center(
+                            child: RichText(
+                              text: TextSpan(
+                                text: '¿No tienes cuenta? ',
+                                style: const TextStyle(
+                                    color: Colors.black87, fontSize: 14),
+                                children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.baseline,
+                                    baseline: TextBaseline.alphabetic,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const RegisterScreen()),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Regístrate aquí',
+                                        style: TextStyle(
+                                          color: Color(0xFF00B14F),
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
@@ -310,20 +316,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           )
         ],
-      ),
-    );
-  }
-
-  Widget _buildDemoButton(String text, Color bgColor, Color textColor) {
-    return Container(
-      width: double.infinity,
-      height: 35,
-      decoration:
-          BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(5)),
-      child: Center(
-        child: Text(text,
-            style: TextStyle(
-                color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
       ),
     );
   }

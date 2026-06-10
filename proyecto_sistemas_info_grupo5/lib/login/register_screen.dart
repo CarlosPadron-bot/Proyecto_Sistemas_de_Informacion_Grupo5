@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+// --- NUEVAS IMPORTACIONES AÑADIDAS ---
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+// -------------------------------------
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/cargar_destino_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
@@ -13,16 +17,17 @@ class RegisterScreen extends StatefulWidget {
 class RegisterState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController usernameController =
-      TextEditingController(); // Nuevo
+  final TextEditingController usernameController = TextEditingController();
   final Auth _authService = Auth();
   String _rolSeleccionado = 'Viajero';
 
   void _handleRegister() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
+    String username = usernameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    // Se agregó validación para que no dejen el nombre vacío
+    if (email.isEmpty || password.isEmpty || username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, rellena todos los campos.')),
       );
@@ -30,13 +35,31 @@ class RegisterState extends State<RegisterScreen> {
     }
 
     try {
-      //El controlador valida y registra en Firebase.
+      // El controlador valida y registra en Firebase.
       await _authService.registroConEmail(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-        username: usernameController.text.trim(),
+        email: email,
+        password: password,
+        username: username,
         rol: _rolSeleccionado,
       );
+
+      // --- INICIO DE LA SOLUCIÓN DEL NOMBRE ---
+      // Obtenemos al usuario que se acaba de crear y loguear
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      
+      if (currentUser != null) {
+        // 1. Actualiza el nombre en Firebase Auth (Para que el header lo lea rápido)
+        await currentUser.updateDisplayName(username);
+
+        // 2. Aseguramos que se guarde en Firestore bajo el campo 'username'
+        await FirebaseFirestore.instance.collection('usuarios').doc(currentUser.uid).set({
+          'username': username,
+          'email': email,
+          'rol': _rolSeleccionado,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)); // 'merge' evita borrar datos si _authService ya había creado el documento
+      }
+      // --- FIN DE LA SOLUCIÓN DEL NOMBRE ---
 
       if (mounted) {
         // Avisa al usuario que se creó la cuenta
@@ -47,14 +70,17 @@ class RegisterState extends State<RegisterScreen> {
 
         // Evaluamos el rol para redirigir a la pantalla correspondiente
         if (_rolSeleccionado == 'Operador') {
-          Navigator.pushReplacement(
+          // Usamos pushAndRemoveUntil para que no puedan darle "Atrás" y volver al registro
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const CargarDestinoPage()),
+            (route) => false,
           );
         } else {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const HomePage()),
+            (route) => false,
           );
         }
       }
@@ -73,6 +99,7 @@ class RegisterState extends State<RegisterScreen> {
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    usernameController.dispose(); // Es buena práctica limpiar todos los controladores
     super.dispose();
   }
 
