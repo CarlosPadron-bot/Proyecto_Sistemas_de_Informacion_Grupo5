@@ -25,6 +25,15 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/humbolt.png
+    - assets/isla_la_tortuga.png
     - assets/logo_rutas.png
     - assets/logo_unimet.png
+    - assets/los_roques.png
+    - assets/merida.png
+    - assets/morrocoy.png
+    - assets/playas_sucre.png
+    - assets/posada.png
+    - assets/salto_angel.png
     - assets/ubicacion.png
+    - assets/caba_merida.png

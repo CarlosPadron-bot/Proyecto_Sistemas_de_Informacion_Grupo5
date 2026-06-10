@@ -54,8 +54,8 @@ class FeaturedSection extends StatelessWidget {
                                 isAccommodation ? '/noche' : '/persona',
                             rating: '4.8',
                             reviewCount: '24',
-                            imageUrl:
-                                '', // Asegúrate de pasar la URL si la tienes
+                            imageUrl: isAccommodation ? "assets/posada.png" : "assets/merida.png",
+                                 // Asegúrate de pasar la URL si la tienes
                             description: 'Descripción detallada...',
                             includes: const ['Desayuno', 'Guía'],
                           ),
@@ -74,6 +74,7 @@ class FeaturedSection extends StatelessWidget {
                       calificacion: 4.8,
                       resenas: 24,
                       categoria: isAccommodation ? 'Posada' : 'Paquete',
+                      rutaImagen: isAccommodation ? 'assets/posada.png' : 'assets/merida.png',
                     ),
                   ),
                 );

@@ -9,6 +9,7 @@ class ItemCard extends StatelessWidget {
   final double calificacion;
   final int resenas;
   final String categoria; // Ej: "Paquete", "posada"
+  final String rutaImagen; // <-- NUEVO: Variable para la ruta de la imagen
 
   const ItemCard({
     super.key,
@@ -20,6 +21,7 @@ class ItemCard extends StatelessWidget {
     required this.calificacion,
     required this.resenas,
     required this.categoria,
+    required this.rutaImagen, // <-- NUEVO: Se requiere al crear la tarjeta
   });
 
   @override
@@ -34,13 +36,17 @@ class ItemCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
+                // AQUI VA LA IMAGEN AHORA
                 Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.grey, // AQUI IRA LA IMAGEN LUEGO
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    // Usamos DecorationImage para poner la imagen de fondo en el contenedor
+                    image: DecorationImage(
+                      image: AssetImage(rutaImagen),
+                      fit: BoxFit.cover, // Hace que la imagen llene todo el espacio sin deformarse
+                    ),
                   ),
-                  child: const Icon(Icons.image, color: Colors.white, size: 40),
                 ),
                 Positioned(
                   top: 8,

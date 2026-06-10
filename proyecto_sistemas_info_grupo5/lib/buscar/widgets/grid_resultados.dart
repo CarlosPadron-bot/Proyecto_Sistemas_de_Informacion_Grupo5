@@ -7,7 +7,7 @@ class GridResultados extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Aquí está la lista con todos los destinos que me pediste
+    // Aquí está la lista con todos los destinos 
     final List<Map<String, dynamic>> destinos = [
       {
         'titulo': 'Aventura Los Roques 3 Días',
@@ -17,7 +17,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/persona',
         'calificacion': 4.9,
         'resenas': 56,
-        'categoria': 'Paquete'
+        'categoria': 'Paquete',
+        'rutaImagen': "assets/isla_la_tortuga.png",
       },
       {
         'titulo': 'Salto Ángel Express 2 Días',
@@ -27,7 +28,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/persona',
         'calificacion': 2.1,
         'resenas': 43,
-        'categoria': 'Paquete'
+        'categoria': 'Paquete',
+        'rutaImagen': 'assets/salto_angel.png',
       },
       {
         'titulo': 'Ruta Andina Económica 4 Días',
@@ -37,7 +39,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/persona',
         'calificacion': 4.6,
         'resenas': 38,
-        'categoria': 'Paquete'
+        'categoria': 'Paquete',
+        'rutaImagen': 'assets/merida.png'
       },
       {
         'titulo': 'Morrocoy Fin de Semana',
@@ -47,7 +50,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/persona',
         'calificacion': 5.0,
         'resenas': 91,
-        'categoria': 'Paquete'
+        'categoria': 'Paquete',
+        'rutaImagen': 'assets/morrocoy.png',
       },
       {
         'titulo': 'Playas de Sucre 3 Días',
@@ -57,7 +61,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/persona',
         'calificacion': 4.5,
         'resenas': 27,
-        'categoria': 'Paquete'
+        'categoria': 'Paquete',
+        'rutaImagen': 'assets/playas_sucre.png',
       },
       {
         'titulo': 'Posada Los Roques Paradise',
@@ -67,7 +72,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/noche',
         'calificacion': 4.8,
         'resenas': 24,
-        'categoria': 'posada'
+        'categoria': 'posada',
+        'rutaImagen': 'assets/los_roques.png',
       },
       {
         'titulo': 'Camping Canaima',
@@ -77,7 +83,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/noche',
         'calificacion': 1.5,
         'resenas': 18,
-        'categoria': 'camping'
+        'categoria': 'camping',
+        'rutaImagen': 'assets/posada.png',
       },
       {
         'titulo': 'Cabaña Montaña Mérida',
@@ -87,7 +94,8 @@ class GridResultados extends StatelessWidget {
         'tipo': '/noche',
         'calificacion': 3.1,
         'resenas': 31,
-        'categoria': 'cabaña'
+        'categoria': 'cabaña',
+        'rutaImagen': 'assets/caba_merida.png',
       },
     ];
 
@@ -121,7 +129,7 @@ class GridResultados extends StatelessWidget {
                         priceSuffix: destino['tipo'],
                         rating: destino['calificacion'].toString(),
                         reviewCount: destino['resenas'].toString(),
-                        imageUrl: '',
+                        imageUrl: destino["rutaImagen"],
                         description:
                             'Descripción detallada de ${destino['titulo']}.',
                         includes: const [
@@ -143,6 +151,7 @@ class GridResultados extends StatelessWidget {
                   calificacion: destino['calificacion'],
                   resenas: destino['resenas'],
                   categoria: destino['categoria'],
+                  rutaImagen: destino["rutaImagen"],
                 ),
               );
             },
