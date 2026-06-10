@@ -5,6 +5,9 @@ import '../login/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:html' as html;
+import '../Servicios/reserva_service.dart';
+import '../modelos/reserva_model.dart';
+
 
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
@@ -49,6 +52,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     final String baseUrl = html.window.location.origin;
     final String returnUrl = "$baseUrl/#/success";
     final String cancelUrl = "$baseUrl/#/";
+    
     try {
       // Obtener el Token de acceso de PayPal
       final authTokenResponse = await http.post(
@@ -99,6 +103,20 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
       }
 
       final data = jsonDecode(orderResponse.body);
+      
+      // Guardamos la reserva en la base de datos al validar la orden
+      final user = FirebaseAuth.instance.currentUser;
+      final nuevaReserva = Reserva(
+        destinoNombre: widget.title,         
+        destinoUbicacion: widget.location,   
+        precioPagado: totalAmount,
+        cantidadViajeros: _cantidadViajeros, 
+        usuarioCorreo: user?.email ?? 'estudiante@correo.unimet.edu.ve',
+        fechaReserva: DateTime.now(),
+      );
+
+      final ReservaService _reservaService = ReservaService();
+      await _reservaService.registrarReserva(nuevaReserva);
 
       // Buscar el link de aprobación enviado por PayPal
       String approveUrl = "";
@@ -111,7 +129,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
 
       // Cambia la dirección de la pestaña actual en lugar de usar url_launcher
       if (approveUrl.isNotEmpty) {
-        _mostrarSnackBar('Redirigiendo a PayPal...', Colors.blue);
+        _mostrarSnackBar('Reserva guardada. Redirigiendo a PayPal...', Colors.blue);
 
         await Future.delayed(const Duration(seconds: 1));
 
@@ -187,9 +205,18 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
             color: Colors.grey[300],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const ClipRRect(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-            child: Icon(Icons.image, size: 80, color: Colors.grey),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
+            // Renderizado dinámico de la imagen con Image.network
+            child: widget.imageUrl.isNotEmpty
+                ? Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.image_not_supported, size: 80, color: Colors.grey);
+                    },
+                  )
+                : const Icon(Icons.image, size: 80, color: Colors.grey),
           ),
         ),
         const SizedBox(height: 20),

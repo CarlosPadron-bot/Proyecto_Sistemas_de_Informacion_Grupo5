@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/auth_wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
+import 'package:proyecto_sistemas_info_grupo5/homepage/vista_reservas_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => AuthWrapper(),
         '/success': (context) => const HomePage(),
+        '/reservas': (context) => const VistaReservasPage(),
       },
     );
   }
