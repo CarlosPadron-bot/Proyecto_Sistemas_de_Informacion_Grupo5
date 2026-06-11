@@ -3,120 +3,168 @@ import 'package:proyecto_sistemas_info_grupo5/homepage/DetalleDestinoPage.dart';
 import '../../homepage/widgets/item_card.dart';
 
 class GridResultados extends StatelessWidget {
-  const GridResultados({super.key});
+  final String categoriaFiltro;
+  final double precioMaxFiltro;
+  final String estadoFiltro;
+  final double calificacionMinFiltro;
+
+  const GridResultados({
+    super.key,
+    required this.categoriaFiltro,
+    required this.precioMaxFiltro,
+    required this.estadoFiltro,
+    required this.calificacionMinFiltro,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Aquí está la lista con todos los destinos 
     final List<Map<String, dynamic>> destinos = [
+      // Sección de paquetes
       {
-        'titulo': 'Aventura Los Roques 3 Días',
-        'ubicacion': 'Los Roques, Dependencias Federales',
+        'titulo': 'Isla la Tortuga',
+        'ubicacion': 'Dependencias Federales',
         'info': '3 días · 6 cupos',
-        'precio': '280',
+        'precio': '150',
         'tipo': '/persona',
-        'calificacion': 4.9,
-        'resenas': 56,
-        'categoria': 'Paquete',
-        'rutaImagen': "assets/isla_la_tortuga.png",
+        'calificacion': 4.8,
+        'resenas': 24,
+        'estado': 'Todos',
+        'categoria': 'Paquetes Turisticos',
+        'rutaImagen': 'assets/isla_la_tortuga.png',
       },
       {
-        'titulo': 'Salto Ángel Express 2 Días',
-        'ubicacion': 'Canaima, Bolívar',
-        'info': '2 días · 12 cupos',
-        'precio': '195',
-        'tipo': '/persona',
-        'calificacion': 2.1,
-        'resenas': 43,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/salto_angel.png',
-      },
-      {
-        'titulo': 'Ruta Andina Económica 4 Días',
-        'ubicacion': 'Mérida, Mérida',
-        'info': '4 días · 15 cupos',
-        'precio': '165',
-        'tipo': '/persona',
-        'calificacion': 4.6,
-        'resenas': 38,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/merida.png'
-      },
-      {
-        'titulo': 'Morrocoy Fin de Semana',
-        'ubicacion': 'Parque Nacional Morrocoy',
+        'titulo': 'Morrocoy',
+        'ubicacion': 'Falcón',
         'info': '2 días · 10 cupos',
-        'precio': '120',
+        'precio': '80',
         'tipo': '/persona',
-        'calificacion': 5.0,
-        'resenas': 91,
-        'categoria': 'Paquete',
+        'calificacion': 4.7,
+        'resenas': 42,
+        'estado': 'Falcón',
+        'categoria': 'Paquetes Turisticos',
         'rutaImagen': 'assets/morrocoy.png',
       },
       {
-        'titulo': 'Playas de Sucre 3 Días',
-        'ubicacion': 'Península de Paria, Sucre',
-        'info': '3 días · 8 cupos',
-        'precio': '145',
+        'titulo': 'Roraima',
+        'ubicacion': 'Bolívar',
+        'info': '6 días · 4 cupos',
+        'precio': '350',
         'tipo': '/persona',
-        'calificacion': 4.5,
-        'resenas': 27,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/playas_sucre.png',
+        'calificacion': 4.9,
+        'resenas': 18,
+        'estado': 'Bolívar',
+        'categoria': 'Paquetes Turisticos',
+        'rutaImagen': 'assets/salto_angel.png',
       },
       {
-        'titulo': 'Posada Los Roques Paradise',
-        'ubicacion': 'Gran Roque',
-        'info': '6 personas',
-        'precio': '45',
-        'tipo': '/noche',
-        'calificacion': 4.8,
-        'resenas': 24,
-        'categoria': 'posada',
+        'titulo': 'Los Roques',
+        'ubicacion': 'Dependencias Federales',
+        'info': '4 días · 8 cupos',
+        'precio': '299',
+        'tipo': '/persona',
+        'calificacion': 4.9,
+        'resenas': 56,
+        'estado': 'Todos',
+        'categoria': 'Paquetes Turisticos',
         'rutaImagen': 'assets/los_roques.png',
       },
+      // Sección de alojamientos
       {
-        'titulo': 'Camping Canaima',
-        'ubicacion': 'Parque Nacional Canaima',
-        'info': '4 personas',
-        'precio': '15',
+        'titulo': 'Galipan',
+        'ubicacion': 'La Guaira',
+        'info': 'Habitaciones confortables',
+        'precio': '45',
         'tipo': '/noche',
-        'calificacion': 1.5,
-        'resenas': 18,
-        'categoria': 'camping',
+        'calificacion': 4.5,
+        'resenas': 28,
+        'estado': 'Caracas',
+        'categoria': 'Alojamientos',
+        'rutaImagen': 'assets/humbolt.png',
+      },
+      {
+        'titulo': 'Canaima',
+        'ubicacion': 'Parque Nacional Canaima',
+        'info': 'Cabañas y habitaciones',
+        'precio': '60',
+        'tipo': '/noche',
+        'calificacion': 4.6,
+        'resenas': 31,
+        'estado': 'Todos',
+        'categoria': 'Alojamientos',
         'rutaImagen': 'assets/posada.png',
       },
       {
-        'titulo': 'Cabaña Montaña Mérida',
-        'ubicacion': 'Los Nevados, Mérida',
-        'info': '8 personas',
-        'precio': '35',
+        'titulo': 'Mérida',
+        'ubicacion': 'Mérida',
+        'info': 'Hermosa vista a las montañas',
+        'precio': '50',
         'tipo': '/noche',
-        'calificacion': 3.1,
-        'resenas': 31,
-        'categoria': 'cabaña',
+        'calificacion': 4.8,
+        'resenas': 19,
+        'estado': 'Mérida',
+        'categoria': 'Alojamientos',
         'rutaImagen': 'assets/caba_merida.png',
       },
     ];
 
+    final destinosFiltrados = destinos.where((dest) {
+      // Categoría
+      final bool cumpleCategoria =
+          (categoriaFiltro == 'Todo' || dest['categoria'] == categoriaFiltro);
+
+      // Presupuesto
+      final double precioDestino =
+          double.tryParse(dest['precio'] ?? '0') ?? 0.0;
+      final bool cumplePrecio = precioDestino <= precioMaxFiltro;
+
+      // Estado del país
+      final bool cumpleEstado =
+          (estadoFiltro == 'Todos' || dest['estado'] == estadoFiltro);
+
+      // Calificación
+      final double calificacionDestino =
+          (dest['calificacion'] as num).toDouble();
+      final bool cumpleCalificacion =
+          calificacionDestino >= calificacionMinFiltro;
+
+      return cumpleCategoria &&
+          cumplePrecio &&
+          cumpleEstado &&
+          cumpleCalificacion;
+    }).toList();
+
+    if (destinosFiltrados.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Text(
+            'No se encontraron resultados que coincidan con los filtros aplicados.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${destinos.length} resultados encontrados',
-            style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 16),
+        Text(
+          'Resultados encontrados: ${destinosFiltrados.length}',
+          style:
+              const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 12),
         Expanded(
           child: GridView.builder(
-            itemCount: destinos.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: 3,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio:
-                  1.5, // Modifica este número si la tarjeta se ve muy estirada o aplastada
+              childAspectRatio: 0.85,
             ),
+            itemCount: destinosFiltrados.length,
             itemBuilder: (context, index) {
-              final destino = destinos[index];
+              final destino = destinosFiltrados[index];
               return InkWell(
                 onTap: () {
                   Navigator.push(

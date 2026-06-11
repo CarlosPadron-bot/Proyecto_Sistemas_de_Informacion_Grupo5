@@ -24,48 +24,57 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // Fondo claro neutro
-      appBar: const CustomHeader(), // <-- CORREGIDO: Se quitó el 'const' que generaba el error
+      appBar:
+          const CustomHeader(), // <-- CORREGIDO: Se quitó el 'const' que generaba el error
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Banner Principal Verde (Sección Informativa)
             const BannerPrincipal(),
-            
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
                   // --- BLOQUE DE BIENVENIDA PERSONALIZADA (PROTEGIDO) ---
                   if (uid.isNotEmpty)
                     StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
+                      stream: FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(uid)
+                          .snapshots(),
                       builder: (context, snapshot) {
-                        String username = 'Viajero'; // Nombre por defecto si está cargando
-                        
+                        String username =
+                            'Viajero'; // Nombre por defecto si está cargando
+
                         // Validación defensiva estricta para evitar barras rojas en la interfaz
                         if (snapshot.hasData && snapshot.data!.exists) {
-                          final data = snapshot.data!.data() as Map<String, dynamic>?;
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>?;
                           if (data != null) {
-                            username = data['nombre'] ?? data['username'] ?? data['displayName'] ?? 'Viajero';
+                            username = data['nombre'] ??
+                                data['username'] ??
+                                data['displayName'] ??
+                                'Viajero';
                           }
                         }
-                        
+
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0, top: 4.0),
+                          padding:
+                              const EdgeInsets.only(bottom: 20.0, top: 4.0),
                           child: Row(
                             children: [
-                              const Icon(Icons.waving_hand, color: Colors.amber, size: 22),
+                              const Icon(Icons.waving_hand,
+                                  color: Colors.amber, size: 22),
                               const SizedBox(width: 8),
                               Text(
                                 '¡Hola, $username!',
                                 style: const TextStyle(
-                                  fontSize: 22, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: Colors.black87
-                                ),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87),
                               ),
                             ],
                           ),
@@ -77,9 +86,9 @@ class HomePage extends StatelessWidget {
                   const SectionTitle(title: 'Paquetes Destacados'),
                   const SizedBox(height: 12),
                   const HorizontalCarousel(isAccommodation: false),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // --- SECCIÓN 2: ALOJAMIENTOS ECONÓMICOS ---
                   const SectionTitle(title: 'Alojamientos Económicos'),
                   const SizedBox(height: 12),
@@ -189,19 +198,20 @@ class HorizontalCarousel extends StatelessWidget {
       },
     ];
 
-    final listaAUsar = isAccommodation ? alojamientosEconomicos : paquetesDestacados;
+    final listaAUsar =
+        isAccommodation ? alojamientosEconomicos : paquetesDestacados;
 
     return SizedBox(
-      height: 350, 
+      height: 350,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: listaAUsar.length,
         itemBuilder: (context, index) {
           final destino = listaAUsar[index];
-          
+
           return Container(
             width: 280,
-            margin: const EdgeInsets.only(right: 16.0, bottom: 8.0), 
+            margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
@@ -216,7 +226,8 @@ class HorizontalCarousel extends StatelessWidget {
                       rating: destino['calificacion'].toString(),
                       reviewCount: destino['resenas'].toString(),
                       imageUrl: destino['rutaImagen'],
-                      description: 'Disfruta de una experiencia única explorando ${destino['titulo']}.',
+                      description:
+                          'Disfruta de una experiencia única explorando ${destino['titulo']}.',
                       includes: const ['Traslados', 'Hospedaje', 'Guía local'],
                     ),
                   ),
@@ -289,16 +300,18 @@ class ItemCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.asset(
                   rutaImagen,
-                  height: 125, 
+                  height: 125,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 125,
                     color: Colors.grey[300],
-                    child: const Icon(Icons.image, color: Colors.grey, size: 40),
+                    child:
+                        const Icon(Icons.image, color: Colors.grey, size: 40),
                   ),
                 ),
               ),
@@ -306,45 +319,52 @@ class ItemCard extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4CAF50),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     categoria,
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ],
           ),
-          
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         titulo,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis, 
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                          const Icon(Icons.location_on,
+                              size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               ubicacion,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -354,26 +374,30 @@ class ItemCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         infoExtra,
-                        style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.blueGrey),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '\$$precio$tipoPrecio',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                            fontSize: 13),
                       ),
                       Row(
                         children: [
                           const Icon(Icons.star, size: 14, color: Colors.amber),
                           Text(
                             ' $calificacion ($resenas)',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -398,7 +422,8 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+      style: const TextStyle(
+          fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
     );
   }
 }
@@ -423,21 +448,23 @@ class BannerPrincipal extends StatelessWidget {
           const Text(
             'Descubre Venezuela sin Gastar de Más',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
             'Turismo económico, auténtico y sostenible al alcance de todos',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
           ),
           const SizedBox(height: 24),
-          
           ElevatedButton.icon(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF2E7D32), // Corregido al verde clarito
+              foregroundColor:
+                  const Color(0xFF2E7D32), // Corregido al verde clarito
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -465,11 +492,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: const Color(0xFF2E7D32), // Verde claro de inicio uniforme
-      elevation: 0, 
-      automaticallyImplyLeading: false, 
+      backgroundColor:
+          const Color(0xFF2E7D32), // Verde claro de inicio uniforme
+      elevation: 0,
+      automaticallyImplyLeading: false,
 
-      // Cambiamos el 'title' para que use un Row expandido. 
+      // Cambiamos el 'title' para que use un Row expandido.
       // Esto empuja automáticamente las acciones a la derecha, calcando el comportamiento de la pantalla Buscar.
       title: SizedBox(
         width: double.infinity,
@@ -481,7 +509,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 Image.asset(
                   'assets/logo_rutas.png',
-                  height: 40, 
+                  height: 40,
                   errorBuilder: (context, error, stackTrace) =>
                       const Icon(Icons.terrain, color: Colors.white, size: 24),
                 ),
@@ -496,7 +524,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            
+
             // LADO DERECHO: Menú de Navegación y Auth integrados directamente aquí
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -509,11 +537,11 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                       (Route<dynamic> route) => false,
                     );
                   },
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.home, color: Colors.white, size: 16),
-                      const SizedBox(width: 4),
-                      const Text(
+                      Icon(Icons.home, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
                         'Inicio',
                         style: TextStyle(
                           color: Colors.white,
@@ -530,14 +558,15 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const BuscarPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const BuscarPage()),
                     );
                   },
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.search, color: Colors.white, size: 16),
-                      const SizedBox(width: 4),
-                      const Text(
+                      Icon(Icons.search, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
                         'Buscar',
                         style: TextStyle(
                           color: Colors.white,
@@ -548,7 +577,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(width: 20),
 
                 // Bloque del usuario o botón de inicio de sesión
@@ -559,7 +588,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       // Dejamos actions vacío ya que ordenamos todo limpiamente en el title expandido
-      actions: const [SizedBox.shrink()], 
+      actions: const [SizedBox.shrink()],
     );
   }
 
@@ -567,10 +596,9 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        
         if (!snapshot.hasData) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10.0), 
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
             child: ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -579,12 +607,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white, 
-                foregroundColor: const Color(0xFF2E7D32), 
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF2E7D32),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20), 
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               child: const Text(
@@ -615,7 +643,8 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             String username = 'Usuario';
             if (userSnapshot.hasData && userSnapshot.data!.exists) {
               var userData = userSnapshot.data!.data() as Map<String, dynamic>;
-              username = userData['nombre'] ?? userData['username'] ?? 'Usuario';
+              username =
+                  userData['nombre'] ?? userData['username'] ?? 'Usuario';
             }
 
             return Row(
@@ -627,40 +656,42 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const ProfileScreen()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white, 
-                      foregroundColor: const Color(0xFF2E7D32), 
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF2E7D32),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20), 
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    icon: const Icon(Icons.person, size: 16), // Ícono sólido idéntico a la captura
+                    icon: const Icon(Icons.person,
+                        size: 16), // Ícono sólido idéntico a la captura
                     label: Container(
                       constraints: const BoxConstraints(maxWidth: 120),
                       child: Text(
                         username,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                 ),
-                
                 const SizedBox(width: 12),
-
                 TextButton.icon(
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const LoginScreen()),
                         (route) => false,
                       );
                     }
@@ -669,7 +700,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                   label: const Text(
                     'Salir',
                     style: TextStyle(
-                      color: Colors.white, 
+                      color: Colors.white,
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),
