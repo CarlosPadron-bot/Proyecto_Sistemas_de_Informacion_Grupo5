@@ -4,10 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import 'DetalleDestinoPage.dart';
 
-
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -47,16 +45,13 @@ class HomePage extends StatelessWidget {
   }
 }
 
-
 // ==========================================
 // WIDGET CARRUSEL HORIZONTAL (CON LISTAS REALES)
 // ==========================================
 class HorizontalCarousel extends StatelessWidget {
   final bool isAccommodation;
 
-
   const HorizontalCarousel({super.key, required this.isAccommodation});
-
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +103,6 @@ class HorizontalCarousel extends StatelessWidget {
       },
     ];
 
-
     // 2. Lista Real para la sección de Alojamientos
     final List<Map<String, dynamic>> alojamientosEconomicos = [
       {
@@ -146,13 +140,10 @@ class HorizontalCarousel extends StatelessWidget {
       },
     ];
 
-
-    // Selecciona la lista adecuada basándose en el booleano
     final listaAUsar = isAccommodation ? alojamientosEconomicos : paquetesDestacados;
 
-
     return SizedBox(
-      height: 350, // Altura óptima para contener todo el diseño flexible
+      height: 350, 
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: listaAUsar.length,
@@ -161,7 +152,7 @@ class HorizontalCarousel extends StatelessWidget {
           
           return Container(
             width: 280,
-            margin: const EdgeInsets.only(right: 16.0, bottom: 8.0), // Margen inferior para respirar
+            margin: const EdgeInsets.only(right: 16.0, bottom: 8.0), 
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
@@ -205,9 +196,8 @@ class HorizontalCarousel extends StatelessWidget {
   }
 }
 
-
 // ==========================================
-// WIDGET CARD DE ÍTEM INDIVIDUAL (DISEÑO ANTI-OVERFLOW - CORREGIDO)
+// WIDGET CARD DE ÍTEM INDIVIDUAL (SOLUCIÓN FLEXIBLE)
 // ==========================================
 class ItemCard extends StatelessWidget {
   final String titulo;
@@ -219,7 +209,6 @@ class ItemCard extends StatelessWidget {
   final int resenas;
   final String categoria;
   final String rutaImagen;
-
 
   const ItemCard({
     super.key,
@@ -233,7 +222,6 @@ class ItemCard extends StatelessWidget {
     required this.categoria,
     required this.rutaImagen,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -253,14 +241,14 @@ class ItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Sección superior de Imagen con etiqueta fija
+          // 1. Sección superior de Imagen
           Stack(
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.asset(
                   rutaImagen,
-                  height: 125, // Reducido sutilmente para maximizar el área de textos
+                  height: 125, 
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
@@ -288,68 +276,69 @@ class ItemCard extends StatelessWidget {
             ],
           ),
           
-          // 2. Sección inferior de textos (CORREGIDO: sin Expanded)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Empuja precios al fondo
-              children: [
-                // Bloque de información descriptiva
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titulo,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis, // Corta títulos largos con (...)
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            ubicacion,
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+          // 2. Sección inferior de textos (RESTAURADO CON EXPANDEED PARA CONTROLAR EL ESPACIO VERTICAL)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        titulo,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis, 
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              ubicacion,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      infoExtra,
-                      style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-                
-                // Bloque de fila inferior: Precio y Calificación
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '\$$precio$tipoPrecio',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        Text(
-                          ' $calificacion ($resenas)',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        infoExtra,
+                        style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  
+                  // Bloque de fila inferior: Precio y Calificación
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\$$precio$tipoPrecio',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 14, color: Colors.amber),
+                          Text(
+                            ' $calificacion ($resenas)',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -358,14 +347,12 @@ class ItemCard extends StatelessWidget {
   }
 }
 
-
 // ==========================================
 // OTROS WIDGETS AUXILIARES REUTILIZADOS
 // ==========================================
 class SectionTitle extends StatelessWidget {
   final String title;
   const SectionTitle({super.key, required this.title});
-
 
   @override
   Widget build(BuildContext context) {
@@ -376,10 +363,8 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-
 class BannerPrincipal extends StatelessWidget {
   const BannerPrincipal({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -411,10 +396,8 @@ class BannerPrincipal extends StatelessWidget {
   }
 }
 
-
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -424,7 +407,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: const Color(0xFF1B5E20),
       automaticallyImplyLeading: false,
       title: const Row(
-        mainAxisSize: MainAxisSize.min, // Evita que la fila ocupe todo el ancho
+        mainAxisSize: MainAxisSize.min, 
         children: [
           Icon(Icons.terrain, color: Colors.white),
           SizedBox(width: 6),
@@ -435,60 +418,60 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
-          builder: (context, snapshot) {
-            String username = 'Usuario';
-            if (snapshot.hasData && snapshot.data!.exists) {
-              username = snapshot.data!['nombre'] ?? 'Usuario';
-            }
-            
-            // Usamos un contenedor flexible para los botones de la derecha
-            return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Nombre del Usuario optimizado
-                  Icon(Icons.person, color: Colors.white.withOpacity(0.9), size: 16),
-                  const SizedBox(width: 4),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 80), // Limita el ancho del nombre
-                    child: Text(
-                      username,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis, // Si el nombre es largo, pone "..."
+        if (uid.isNotEmpty)
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
+            builder: (context, snapshot) {
+              String username = 'Usuario';
+              // Manejo seguro por si el campo 'nombre' no existe o está cargando, evitando la barra roja superior
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                if (data != null && data.containsKey('nombre')) {
+                  username = data['nombre'] ?? 'Usuario';
+                }
+              }
+              
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person, color: Colors.white.withOpacity(0.9), size: 16),
+                    const SizedBox(width: 4),
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 80), 
+                      child: Text(
+                        username,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis, 
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  
-                  // Botón Salir más compacto
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.logout, color: Colors.white, size: 18),
-                    tooltip: 'Salir',
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.logout, color: Colors.white, size: 18),
+                      tooltip: 'Salir',
+                      onPressed: () async {
+                        await FirebaseAuth.instance.signOut();
+                        if (context.mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }
-
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
