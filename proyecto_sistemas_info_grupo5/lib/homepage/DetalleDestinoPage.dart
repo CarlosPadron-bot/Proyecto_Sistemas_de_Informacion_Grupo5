@@ -51,7 +51,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     final String baseUrl = html.window.location.origin;
     final String returnUrl = "$baseUrl/#/success";
     final String cancelUrl = "$baseUrl/#/";
-    
+
     try {
       // Obtener el Token de acceso de PayPal
       final authTokenResponse = await http.post(
@@ -102,16 +102,16 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
       }
 
       final data = jsonDecode(orderResponse.body);
-      
+
       // Guardamos la reserva en la base de datos al validar la orden con PayPal
       final user = FirebaseAuth.instance.currentUser;
-      
+
       // --- CORRECCIÓN AQUÍ: Adaptado completamente a tu nuevo modelo Reserva ---
       final nuevaReserva = Reserva(
         id: '', // Se deja vacío para que Firestore genere el ID automático del documento
         usuarioId: user?.uid ?? '',
         destinoId: 'id_simulado_dest', // ID temporal asignado
-        destinoNombre: widget.title,         
+        destinoNombre: widget.title,
         precioTotal: totalAmount,
         fechaCompra: DateTime.now(),
         urlImagen: widget.imageUrl, // <-- ¡FOTO RECUPERADA EXITOSAMENTE!
@@ -131,7 +131,8 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
 
       // Cambia la dirección de la pestaña actual en lugar de usar url_launcher
       if (approveUrl.isNotEmpty) {
-        _mostrarSnackBar('Reserva guardada. Redirigiendo a PayPal...', Colors.blue);
+        _mostrarSnackBar(
+            'Reserva guardada. Redirigiendo a PayPal...', Colors.blue);
 
         await Future.delayed(const Duration(seconds: 1));
 
@@ -197,6 +198,8 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
   }
 
   Widget _buildContenidoIzquierdo() {
+    final bool esUrlDeRed = widget.imageUrl.startsWith('http://') ||
+        widget.imageUrl.startsWith('https://');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -210,13 +213,23 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(12)),
             child: widget.imageUrl.isNotEmpty
-                ? Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.image_not_supported, size: 80, color: Colors.grey);
-                    },
-                  )
+                ? (esUrlDeRed
+                    ? Image.network(
+                        widget.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.image_not_supported,
+                              size: 80, color: Colors.grey);
+                        },
+                      )
+                    : Image.asset(
+                        widget.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.image_not_supported,
+                              size: 80, color: Colors.grey);
+                        },
+                      ))
                 : const Icon(Icons.image, size: 80, color: Colors.grey),
           ),
         ),

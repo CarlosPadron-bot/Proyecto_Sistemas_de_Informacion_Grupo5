@@ -225,7 +225,7 @@ class HorizontalCarousel extends StatelessWidget {
                       priceSuffix: destino['tipo'],
                       rating: destino['calificacion'].toString(),
                       reviewCount: destino['resenas'].toString(),
-                      imageUrl: destino['rutaImagen'],
+                      imageUrl: destino['rutaImagen'] ?? '',
                       description:
                           'Disfruta de una experiencia única explorando ${destino['titulo']}.',
                       includes: const ['Traslados', 'Hospedaje', 'Guía local'],
