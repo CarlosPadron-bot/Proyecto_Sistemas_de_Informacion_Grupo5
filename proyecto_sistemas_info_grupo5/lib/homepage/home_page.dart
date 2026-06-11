@@ -4,6 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import 'DetalleDestinoPage.dart';
 
+
+//=============================
+// Vista principal con diseño responsivo, carruseles horizontales
+// y barra de navegación optimizada integrada con Firebase.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -11,12 +15,12 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: const CustomAppBar(),
+      appBar: const CustomAppBar(), // El AppBar Verde exacto de la imagen
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Principal Informativo
+            // Banner Principal Verde con el botón de "Explorar Destinos"
             const BannerPrincipal(),
             
             Padding(
@@ -55,7 +59,6 @@ class HorizontalCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Lista Real para la sección de Paquetes
     final List<Map<String, dynamic>> paquetesDestacados = [
       {
         'titulo': 'Aventura Los Roques 3 Días',
@@ -102,8 +105,6 @@ class HorizontalCarousel extends StatelessWidget {
         'rutaImagen': 'assets/morrocoy.png',
       },
     ];
-
-    // 2. Lista Real para la sección de Alojamientos
     final List<Map<String, dynamic>> alojamientosEconomicos = [
       {
         'titulo': 'Posada Los Roques Paradise',
@@ -140,10 +141,11 @@ class HorizontalCarousel extends StatelessWidget {
       },
     ];
 
+    // Selección lógica de la fuente de datos según la propiedad recibida
     final listaAUsar = isAccommodation ? alojamientosEconomicos : paquetesDestacados;
 
     return SizedBox(
-      height: 350, 
+      height: 350, // Altura calculada para evitar desbordes
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: listaAUsar.length,
@@ -151,7 +153,7 @@ class HorizontalCarousel extends StatelessWidget {
           final destino = listaAUsar[index];
           
           return Container(
-            width: 280,
+            width: 280, //Ancho fijado estandar
             margin: const EdgeInsets.only(right: 16.0, bottom: 8.0), 
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
@@ -199,6 +201,7 @@ class HorizontalCarousel extends StatelessWidget {
 // ==========================================
 // WIDGET CARD DE ÍTEM INDIVIDUAL (SOLUCIÓN FLEXIBLE)
 // ==========================================
+// ItemCard es para implementar un diseño anti overflow
 class ItemCard extends StatelessWidget {
   final String titulo;
   final String ubicacion;
@@ -241,7 +244,6 @@ class ItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Sección superior de Imagen
           Stack(
             children: [
               ClipRRect(
@@ -276,7 +278,6 @@ class ItemCard extends StatelessWidget {
             ],
           ),
           
-          // 2. Sección inferior de textos (RESTAURADO CON EXPANDEED PARA CONTROLAR EL ESPACIO VERTICAL)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
@@ -318,7 +319,6 @@ class ItemCard extends StatelessWidget {
                     ],
                   ),
                   
-                  // Bloque de fila inferior: Precio y Calificación
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -348,7 +348,7 @@ class ItemCard extends StatelessWidget {
 }
 
 // ==========================================
-// OTROS WIDGETS AUXILIARES REUTILIZADOS
+// COMPONENTES DE INTERFAZ AUXILIARES
 // ==========================================
 class SectionTitle extends StatelessWidget {
   final String title;
@@ -363,6 +363,9 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
+// ==========================================
+// BANNER PRINCIPAL 
+// ==========================================
 class BannerPrincipal extends StatelessWidget {
   const BannerPrincipal({super.key});
 
@@ -370,25 +373,45 @@ class BannerPrincipal extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF00B0FF), Color(0xFF00E5FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24.0),
+      color: const Color(0xFF2E7D32), // Color verde exacto del banner de fondo
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        // Línea corregida:
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Text(
-            '¡Explora la majestuosidad de Venezuela!',
-            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+            'Descubre Venezuela sin Gastar de Más',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Encuentra las mejores eco-rutas, posadas sustentables y campings para tu próxima aventura respetuosa con el medio ambiente.',
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+            'Turismo económico, auténtico y sostenible al alcance de todos',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+          ),
+          const SizedBox(height: 24),
+          
+          // Botón blanco central "Explorar Destinos"
+          ElevatedButton.icon(
+            onPressed: () {
+              // Acción para explorar
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF1B5E20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
+            ),
+            icon: const Icon(Icons.search, size: 18),
+            label: const Text(
+              'Explorar Destinos',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -396,6 +419,9 @@ class BannerPrincipal extends StatelessWidget {
   }
 }
 
+// ==========================================
+// COMPONENTE DE LA BARRA DE NAVEGACIÓN
+// ==========================================
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
 
@@ -404,10 +430,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     
     return AppBar(
-      backgroundColor: const Color(0xFF1B5E20),
+      backgroundColor: const Color(0xFF1B5E20), // Color verde oscuro de la barra
+      elevation: 0,
       automaticallyImplyLeading: false,
       title: const Row(
-        mainAxisSize: MainAxisSize.min, 
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.terrain, color: Colors.white),
           SizedBox(width: 6),
@@ -418,57 +445,80 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        if (uid.isNotEmpty)
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
-            builder: (context, snapshot) {
-              String username = 'Usuario';
-              // Manejo seguro por si el campo 'nombre' no existe o está cargando, evitando la barra roja superior
-              if (snapshot.hasData && snapshot.data!.exists) {
-                final data = snapshot.data!.data() as Map<String, dynamic>?;
-                if (data != null && data.containsKey('nombre')) {
-                  username = data['nombre'] ?? 'Usuario';
-                }
-              }
-              
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person, color: Colors.white.withOpacity(0.9), size: 16),
-                    const SizedBox(width: 4),
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 80), 
-                      child: Text(
-                        username,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis, 
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.logout, color: Colors.white, size: 18),
-                      tooltip: 'Salir',
-                      onPressed: () async {
-                        await FirebaseAuth.instance.signOut();
-                        if (context.mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+        // 1. Botón "Inicio" con icono de casa blanco
+        TextButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.home, color: Colors.white, size: 16),
+          label: const Text(
+            'Inicio',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
           ),
+        ),
+        const SizedBox(width: 4),
+
+        // 2. Botón "Buscar" con icono de lupa blanco
+        TextButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.search, color: Colors.white, size: 16),
+          label: const Text(
+            'Buscar',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 4),
+
+        // 3. Botón dinámico del Usuario (Muestra "Freddy F" o el real desde Firestore de forma segura)
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
+          builder: (context, snapshot) {
+            String username = 'Freddy F'; // Valor por defecto idéntico a tu mockup
+            
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              if (data != null) {
+                // Intenta mapear dinámicamente cualquier campo que contenga el nombre en tu Firestore
+                username = data['nombre'] ?? data['username'] ?? data['displayName'] ?? 'Freddy F';
+              }
+            }
+            
+            return TextButton.icon(
+              onPressed: () {
+                // Acción para ir al perfil
+              },
+              icon: const Icon(Icons.person_outline, color: Colors.white, size: 16),
+              label: Container(
+                constraints: const BoxConstraints(maxWidth: 90),
+                child: Text(
+                  username,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 4),
+
+        // 4. Botón "Salir" con icono de logout blanco
+        TextButton.icon(
+          onPressed: () async {
+            await FirebaseAuth.instance.signOut();
+            if (context.mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            }
+          },
+          icon: const Icon(Icons.logout, color: Colors.white, size: 16),
+          label: const Text(
+            'Salir',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 12),
       ],
     );
   }
