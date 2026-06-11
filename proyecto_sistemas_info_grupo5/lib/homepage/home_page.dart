@@ -1,26 +1,35 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// ==========================================
+// PROYECTO: RutasVzla
+// MÓDULO: Homepage / Pantalla Principal
+// ==========================================
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
-import 'DetalleDestinoPage.dart';
+import '../buscar/buscar_page.dart';
+import '../profile/profile_screen.dart';
+import 'DetalleDestinoPage.dart'; // <-- CORREGIDO: Se agregó el punto y coma (;) que faltaba
 
-
-//=============================
-// Vista principal con diseño responsivo, carruseles horizontales
-// y barra de navegación optimizada integrada con Firebase.
+// ==========================================
+// MÓDULO: HOMEPAGE (CON SALUDO PERSONALIZADO)
+// ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Obtenemos el ID del usuario autenticado actualmente
+    final String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: const CustomAppBar(), // El AppBar Verde exacto de la imagen
+      backgroundColor: const Color(0xFFF8F9FA), // Fondo claro neutro
+      appBar: const CustomHeader(), // <-- CORREGIDO: Se quitó el 'const' que generaba el error
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Principal Verde con el botón de "Explorar Destinos"
+            // Banner Principal Verde (Sección Informativa)
             const BannerPrincipal(),
             
             Padding(
@@ -28,6 +37,42 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  
+                  // --- BLOQUE DE BIENVENIDA PERSONALIZADA (PROTEGIDO) ---
+                  if (uid.isNotEmpty)
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
+                      builder: (context, snapshot) {
+                        String username = 'Viajero'; // Nombre por defecto si está cargando
+                        
+                        // Validación defensiva estricta para evitar barras rojas en la interfaz
+                        if (snapshot.hasData && snapshot.data!.exists) {
+                          final data = snapshot.data!.data() as Map<String, dynamic>?;
+                          if (data != null) {
+                            username = data['nombre'] ?? data['username'] ?? data['displayName'] ?? 'Viajero';
+                          }
+                        }
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0, top: 4.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.waving_hand, color: Colors.amber, size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                '¡Hola, $username!',
+                                style: const TextStyle(
+                                  fontSize: 22, 
+                                  fontWeight: FontWeight.bold, 
+                                  color: Colors.black87
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+
                   // --- SECCIÓN 1: PAQUETES DESTACADOS ---
                   const SectionTitle(title: 'Paquetes Destacados'),
                   const SizedBox(height: 12),
@@ -50,7 +95,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// WIDGET CARRUSEL HORIZONTAL (CON LISTAS REALES)
+// WIDGET CARRUSEL HORIZONTAL DINÁMICO
 // ==========================================
 class HorizontalCarousel extends StatelessWidget {
   final bool isAccommodation;
@@ -59,6 +104,7 @@ class HorizontalCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Datos locales para Paquetes Turísticos
     final List<Map<String, dynamic>> paquetesDestacados = [
       {
         'titulo': 'Aventura Los Roques 3 Días',
@@ -105,6 +151,8 @@ class HorizontalCarousel extends StatelessWidget {
         'rutaImagen': 'assets/morrocoy.png',
       },
     ];
+
+    // Datos locales para Alojamientos
     final List<Map<String, dynamic>> alojamientosEconomicos = [
       {
         'titulo': 'Posada Los Roques Paradise',
@@ -141,11 +189,10 @@ class HorizontalCarousel extends StatelessWidget {
       },
     ];
 
-    // Selección lógica de la fuente de datos según la propiedad recibida
     final listaAUsar = isAccommodation ? alojamientosEconomicos : paquetesDestacados;
 
     return SizedBox(
-      height: 350, // Altura calculada para evitar desbordes
+      height: 350, 
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: listaAUsar.length,
@@ -153,7 +200,7 @@ class HorizontalCarousel extends StatelessWidget {
           final destino = listaAUsar[index];
           
           return Container(
-            width: 280, //Ancho fijado estandar
+            width: 280,
             margin: const EdgeInsets.only(right: 16.0, bottom: 8.0), 
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
@@ -169,12 +216,8 @@ class HorizontalCarousel extends StatelessWidget {
                       rating: destino['calificacion'].toString(),
                       reviewCount: destino['resenas'].toString(),
                       imageUrl: destino['rutaImagen'],
-                      description: 'Disfruta de una experiencia ecológica única explorando de cerca el destino ${destino['titulo']}. Incluye guías locales certificados y hospedaje sustentable.',
-                      includes: const [
-                        'Traslados ecológicos',
-                        'Hospedaje Sustentable',
-                        'Guía local certificado'
-                      ],
+                      description: 'Disfruta de una experiencia única explorando ${destino['titulo']}.',
+                      includes: const ['Traslados', 'Hospedaje', 'Guía local'],
                     ),
                   ),
                 );
@@ -199,9 +242,8 @@ class HorizontalCarousel extends StatelessWidget {
 }
 
 // ==========================================
-// WIDGET CARD DE ÍTEM INDIVIDUAL (SOLUCIÓN FLEXIBLE)
+// WIDGET CARD INDIVIDUAL (CON CONTROL DE OVERFLOW)
 // ==========================================
-// ItemCard es para implementar un diseño anti overflow
 class ItemCard extends StatelessWidget {
   final String titulo;
   final String ubicacion;
@@ -347,9 +389,7 @@ class ItemCard extends StatelessWidget {
   }
 }
 
-// ==========================================
-// COMPONENTES DE INTERFAZ AUXILIARES
-// ==========================================
+// Títulos de Sección
 class SectionTitle extends StatelessWidget {
   final String title;
   const SectionTitle({super.key, required this.title});
@@ -363,8 +403,9 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
+// Banner Principal con el botón "Explorar Destinos"
 // ==========================================
-// BANNER PRINCIPAL 
+// Banner Principal con el botón "Explorar Destinos"
 // ==========================================
 class BannerPrincipal extends StatelessWidget {
   const BannerPrincipal({super.key});
@@ -374,9 +415,8 @@ class BannerPrincipal extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24.0),
-      color: const Color(0xFF2E7D32), // Color verde exacto del banner de fondo
+      color: const Color(0xFF2E7D32), // El verde clarito y fresco de inicio
       child: Column(
-        // Línea corregida:
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -393,14 +433,11 @@ class BannerPrincipal extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           
-          // Botón blanco central "Explorar Destinos"
           ElevatedButton.icon(
-            onPressed: () {
-              // Acción para explorar
-            },
+            onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1B5E20),
+              foregroundColor: const Color(0xFF2E7D32), // Corregido al verde clarito
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -420,106 +457,229 @@ class BannerPrincipal extends StatelessWidget {
 }
 
 // ==========================================
-// COMPONENTE DE LA BARRA DE NAVEGACIÓN
+// COMPONENTE: HEADER SUPERIOR ESTÁTICO (COLOR ACTUALIZADO)
 // ==========================================
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CustomAppBar({super.key});
+class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
+  const CustomHeader({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    
     return AppBar(
-      backgroundColor: const Color(0xFF1B5E20), // Color verde oscuro de la barra
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      title: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.terrain, color: Colors.white),
-          SizedBox(width: 6),
-          Text(
-            'RutasVzla', 
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ],
+      backgroundColor: const Color(0xFF2E7D32), // Verde claro de inicio uniforme
+      elevation: 0, 
+      automaticallyImplyLeading: false, 
+
+      // Cambiamos el 'title' para que use un Row expandido. 
+      // Esto empuja automáticamente las acciones a la derecha, calcando el comportamiento de la pantalla Buscar.
+      title: SizedBox(
+        width: double.infinity,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // LADO IZQUIERDO: Logo y Nombre
+            Row(
+              children: [
+                Image.asset(
+                  'assets/logo_rutas.png',
+                  height: 40, 
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.terrain, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'RutasVzla',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
+            ),
+            
+            // LADO DERECHO: Menú de Navegación y Auth integrados directamente aquí
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.home, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Inicio',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BuscarPage()),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Buscar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 20),
+
+                // Bloque del usuario o botón de inicio de sesión
+                _buildAuthButton(context),
+              ],
+            ),
+          ],
+        ),
       ),
-      actions: [
-        // 1. Botón "Inicio" con icono de casa blanco
-        TextButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.home, color: Colors.white, size: 16),
-          label: const Text(
-            'Inicio',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
-          ),
-        ),
-        const SizedBox(width: 4),
+      // Dejamos actions vacío ya que ordenamos todo limpiamente en el title expandido
+      actions: const [SizedBox.shrink()], 
+    );
+  }
 
-        // 2. Botón "Buscar" con icono de lupa blanco
-        TextButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.search, color: Colors.white, size: 16),
-          label: const Text(
-            'Buscar',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
-          ),
-        ),
-        const SizedBox(width: 4),
-
-        // 3. Botón dinámico del Usuario (Muestra "Freddy F" o el real desde Firestore de forma segura)
-        StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('usuarios').doc(uid).snapshots(),
-          builder: (context, snapshot) {
-            String username = 'Freddy F'; // Valor por defecto idéntico a tu mockup
-            
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final data = snapshot.data!.data() as Map<String, dynamic>?;
-              if (data != null) {
-                // Intenta mapear dinámicamente cualquier campo que contenga el nombre en tu Firestore
-                username = data['nombre'] ?? data['username'] ?? data['displayName'] ?? 'Freddy F';
-              }
-            }
-            
-            return TextButton.icon(
+  Widget _buildAuthButton(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        
+        if (!snapshot.hasData) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0), 
+            child: ElevatedButton(
               onPressed: () {
-                // Acción para ir al perfil
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
               },
-              icon: const Icon(Icons.person_outline, color: Colors.white, size: 16),
-              label: Container(
-                constraints: const BoxConstraints(maxWidth: 90),
-                child: Text(
-                  username,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white, 
+                foregroundColor: const Color(0xFF2E7D32), 
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20), 
                 ),
               ),
-            );
-          },
-        ),
-        const SizedBox(width: 4),
+              child: const Text(
+                'Iniciar Sesión',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          );
+        }
 
-        // 4. Botón "Salir" con icono de logout blanco
-        TextButton.icon(
-          onPressed: () async {
-            await FirebaseAuth.instance.signOut();
-            if (context.mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(snapshot.data!.uid)
+              .get(),
+          builder: (context, userSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               );
             }
+
+            String username = 'Usuario';
+            if (userSnapshot.hasData && userSnapshot.data!.exists) {
+              var userData = userSnapshot.data!.data() as Map<String, dynamic>;
+              username = userData['nombre'] ?? userData['username'] ?? 'Usuario';
+            }
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white, 
+                      foregroundColor: const Color(0xFF2E7D32), 
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20), 
+                      ),
+                    ),
+                    icon: const Icon(Icons.person, size: 16), // Ícono sólido idéntico a la captura
+                    label: Container(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Text(
+                        username,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+
+                TextButton.icon(
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.logout, color: Colors.white, size: 16),
+                  label: const Text(
+                    'Salir',
+                    style: TextStyle(
+                      color: Colors.white, 
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            );
           },
-          icon: const Icon(Icons.logout, color: Colors.white, size: 16),
-          label: const Text(
-            'Salir',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
-          ),
-        ),
-        const SizedBox(width: 12),
-      ],
+        );
+      },
     );
   }
 
