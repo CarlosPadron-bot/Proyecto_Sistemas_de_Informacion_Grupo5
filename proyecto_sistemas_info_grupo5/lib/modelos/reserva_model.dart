@@ -1,47 +1,48 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Reserva {
-  final String? id;
+  final String id;
+  final String usuarioId;
+  final String destinoId;
   final String destinoNombre;
-  final String destinoUbicacion;
-  final double precioPagado;
-  final int cantidadViajeros;
-  final String usuarioCorreo;
-  final DateTime fechaReserva;
+  final double precioTotal;
+  final DateTime fechaCompra;
+  final String urlImagen; // <-- 1. Agregamos la propiedad aquí
 
   Reserva({
-    this.id,
+    required this.id,
+    required this.usuarioId,
+    required this.destinoId,
     required this.destinoNombre,
-    required this.destinoUbicacion,
-    required this.precioPagado,
-    required this.cantidadViajeros,
-    required this.usuarioCorreo,
-    required this.fechaReserva,
+    required this.precioTotal,
+    required this.fechaCompra,
+    required this.urlImagen, // <-- 2. La requerimos en el constructor
   });
 
-  // Convertir de Objeto Dart a JSON (Map) para Firebase
+  // 3. Mapeo para enviar los datos de forma limpia a Firebase Firestore
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
+      'usuarioId': usuarioId,
+      'destinoId': destinoId,
       'destinoNombre': destinoNombre,
-      'destinoUbicacion': destinoUbicacion,
-      'precioPagado': precioPagado,
-      'cantidadViajeros': cantidadViajeros,
-      'usuarioCorreo': usuarioCorreo,
-      'fechaReserva': Timestamp.fromDate(fechaReserva),
+      'precioTotal': precioTotal,
+      'fechaCompra': fechaCompra.toIso8601String().substring(0, 10), // Guarda "AAAA-MM-DD"
+      'urlImagen': urlImagen, // <-- 4. Se incluye en el mapa de Firebase
     };
   }
 
-  // Convertir de Firebase (DocumentSnapshot) a Objeto Dart
-  factory Reserva.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  // 5. Factoría para reconstruir el objeto cuando se lee desde Firebase
+  factory Reserva.fromJson(Map<String, dynamic> json) {
     return Reserva(
-      id: doc.id,
-      destinoNombre: data['destinoNombre'] ?? '',
-      destinoUbicacion: data['destinoUbicacion'] ?? '',
-      precioPagado: (data['precioPagado'] ?? 0.0).toDouble(),
-      cantidadViajeros: data['cantidadViajeros'] ?? 1,
-      usuarioCorreo: data['usuarioCorreo'] ?? 'Invitado',
-      fechaReserva: (data['fechaReserva'] as Timestamp).toDate(),
+      id: json['id'] ?? '',
+      usuarioId: json['usuarioId'] ?? '',
+      destinoId: json['destinoId'] ?? '',
+      destinoNombre: json['destinoNombre'] ?? '',
+      precioTotal: (json['precioTotal'] ?? json['precio'] ?? 0.0).toDouble(),
+      fechaCompra: json['fechaCompra'] != null 
+          ? DateTime.parse(json['fechaCompra']) 
+          : DateTime.now(),
+      urlImagen: json['urlImagen'] ?? '', // <-- 6. Lee la imagen de Firebase sin caerse si viene vacía
     );
   }
 }

@@ -8,7 +8,6 @@ import 'dart:html' as html;
 import '../Servicios/reserva_service.dart';
 import '../modelos/reserva_model.dart';
 
-
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
   final String location;
@@ -104,15 +103,18 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
 
       final data = jsonDecode(orderResponse.body);
       
-      // Guardamos la reserva en la base de datos al validar la orden
+      // Guardamos la reserva en la base de datos al validar la orden con PayPal
       final user = FirebaseAuth.instance.currentUser;
+      
+      // --- CORRECCIÓN AQUÍ: Adaptado completamente a tu nuevo modelo Reserva ---
       final nuevaReserva = Reserva(
+        id: '', // Se deja vacío para que Firestore genere el ID automático del documento
+        usuarioId: user?.uid ?? '',
+        destinoId: 'id_simulado_dest', // ID temporal asignado
         destinoNombre: widget.title,         
-        destinoUbicacion: widget.location,   
-        precioPagado: totalAmount,
-        cantidadViajeros: _cantidadViajeros, 
-        usuarioCorreo: user?.email ?? 'estudiante@correo.unimet.edu.ve',
-        fechaReserva: DateTime.now(),
+        precioTotal: totalAmount,
+        fechaCompra: DateTime.now(),
+        urlImagen: widget.imageUrl, // <-- ¡FOTO RECUPERADA EXITOSAMENTE!
       );
 
       final ReservaService _reservaService = ReservaService();
@@ -207,7 +209,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(12)),
-            // Renderizado dinámico de la imagen con Image.network
             child: widget.imageUrl.isNotEmpty
                 ? Image.network(
                     widget.imageUrl,
