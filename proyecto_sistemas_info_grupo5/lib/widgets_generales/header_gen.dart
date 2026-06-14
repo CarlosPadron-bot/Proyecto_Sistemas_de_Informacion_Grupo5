@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../login/login_screen.dart';
-import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
-import '../buscar/buscar_page.dart';
-import '../profile/profile_screen.dart';
+import 'package:proyecto_sistemas_info_grupo5/login/login_screen.dart';
+import 'package:proyecto_sistemas_info_grupo5/login/auth_wrapper.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/profile/profile_screen.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/admin/panel_admin.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/operador/panel_operador.dart'; 
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   const CustomHeader({Key? key}) : super(key: key);
@@ -14,24 +16,25 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: const Color(0xFF009933),
       elevation: 2,
-      automaticallyImplyLeading: false, // Evita la flecha de volver atrás automática
+      automaticallyImplyLeading: false, 
 
       // Logo y Nombre
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Image.asset(
             'assets/logo_rutas.png',
-            height: 60,
+            height: 50, // Un poco más pequeño para dar espacio a los botones
             errorBuilder: (context, error, stackTrace) =>
                 const Icon(Icons.flight_takeoff, color: Colors.white),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           const Text(
             'RutasVzla',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 20,
+              fontSize: 18,
             ),
           ),
         ],
@@ -44,16 +47,14 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
+              MaterialPageRoute(builder: (context) => AuthWrapper()), 
               (Route<dynamic> route) => false,
             );
           },
-          icon: const Icon(Icons.home, color: Colors.white, size: 20),
+          icon: const Icon(Icons.home, color: Colors.white, size: 18),
           label: const Text(
             'Inicio',
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
         ),
 
@@ -65,20 +66,18 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               MaterialPageRoute(builder: (context) => const BuscarPage()),
             );
           },
-          icon: const Icon(Icons.search, color: Colors.white, size: 20),
+          icon: const Icon(Icons.search, color: Colors.white, size: 18),
           label: const Text(
             'Buscar',
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
         ),
         
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
 
-        // Zona dinámica: Botón de Iniciar Sesión o (Nombre + Salir)
+        // Zona dinámica: Botón de Iniciar Sesión o (Paneles + Nombre + Salir)
         Padding(
-          padding: const EdgeInsets.only(right: 16.0),
+          padding: const EdgeInsets.only(right: 12.0),
           child: _buildAuthButton(context),
         ),
       ],
@@ -106,7 +105,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
             child: const Text(
               'Iniciar Sesión',
@@ -122,11 +121,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               .doc(snapshot.data!.uid)
               .get(),
           builder: (context, userSnapshot) {
-            // Muestra un indicador de carga mientras lee la base de datos
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 child: CircularProgressIndicator(
                   color: Colors.white,
                   strokeWidth: 2,
@@ -134,18 +132,56 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             }
 
-            // Extraemos el nombre. Si hay error o no existe, ponemos 'Usuario' por defecto
             String username = 'Usuario';
+            String rol = 'viajero'; 
+
             if (userSnapshot.hasData && userSnapshot.data!.exists) {
               var userData = userSnapshot.data!.data() as Map<String, dynamic>;
               username = userData['username'] ?? 'Usuario';
+              // Convertimos a minúsculas para evitar fallos si en la DB dice "Operador" u "Operator"
+              rol = (userData['rol'] ?? 'viajero').toString().trim().toLowerCase();
             }
 
-            // Retornamos la fila con el Nombre y el botón de Salir 
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Botón del Nombre (lleva al perfil)
+                // --- BOTÓN EXCLUSIVO PARA ADMINISTRADOR ---
+                if (rol == 'admin' || rol == 'administrador') ...[
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PanelAdmin()),
+                      );
+                    },
+                    icon: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 18),
+                    label: const Text(
+                      'Admin',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+
+                // --- BOTÓN EXCLUSIVO PARA OPERADOR ---
+                if (rol == 'operador') ...[
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PanelOperador()), 
+                      );
+                    },
+                    icon: const Icon(Icons.dashboard, color: Colors.white, size: 18),
+                    label: const Text(
+                      'Panel Operador',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+
+                // --- BOTÓN DE PERFIL (Para todos) ---
                 TextButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -163,15 +199,12 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 
-                const SizedBox(width: 5),
+                const SizedBox(width: 4),
 
-                // Botón de Salir
+                // --- BOTÓN DE SALIR (Para todos) ---
                 TextButton.icon(
                   onPressed: () async {
-                    // 1. Cierra sesión en Firebase
                     await FirebaseAuth.instance.signOut();
-                    
-                    // 2. Devuelve a la pantalla de Login y borra el historial
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,

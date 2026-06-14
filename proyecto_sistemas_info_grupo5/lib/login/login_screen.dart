@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
+import 'package:proyecto_sistemas_info_grupo5/admin/admin_dashboard.dart';
+import 'package:proyecto_sistemas_info_grupo5/operador/operador_dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,18 +25,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor, introduce tu correo y contraseña.')),
+        const SnackBar(content: Text('Por favor, introduce tu correo y contraseña.')),
       );
       return;
     }
 
-    // Validación de seguridad local
     if (!email.toLowerCase().endsWith('@correo.unimet.edu.ve')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-              'Acceso denegado. Solo se permiten correos institucionales @correo.unimet.edu.ve'),
+          content: Text('Acceso denegado. Solo se permiten correos institucionales @correo.unimet.edu.ve'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -40,19 +41,36 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      // Intentar iniciar sesión en Firebase
-      await _authService.loginConEmail(email, password);
+      // 1. Intentar iniciar sesión en Firebase Auth
+      UserCredential? userCredential = await _authService.loginConEmail(email, password);
 
-      // Si la autenticación es exitosa se redirige a la HomePage
-      if (mounted) {
-        Navigator.pushReplacement(
-          // Se usa pushReplacement para que no puedan volver al login con el botón de atrás.
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+      if (userCredential != null && userCredential.user != null) {
+        String uid = userCredential.user!.uid;
+
+        // 2. Consultar el rol en Firestore antes de redirigir
+        String? rol = await _authService.obtenerRol(uid);
+
+        if (mounted) {
+          // 3. Redirección inteligente basada en el rol guardado
+          // Usamos .toLowerCase() para evitar errores si lo guardaste como "admin", "Admin", etc.
+          String rolNormalizado = rol?.toLowerCase() ?? 'viajero';
+
+          Widget pantallaDestino;
+          if (rolNormalizado == 'admin') {
+            pantallaDestino = const AdminDashboard();
+          } else if (rolNormalizado == 'operador') {
+            pantallaDestino = const OperadorDashboard();
+          } else {
+            pantallaDestino = const HomePage(); // Rol 'viajero' o por defecto
+          }
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => pantallaDestino),
+          );
+        }
       }
     } catch (e) {
-      // Si Firebase devuelve un error como contraseña incorrecta o si no existe un usuario.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -86,20 +104,20 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-              Row(
-                children: [
-                  Image.asset('assets/logo_rutas.png', height: 60),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'RutasVzla',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Image.asset('assets/logo_rutas.png', height: 60),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'RutasVzla',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
                 Row(
                   children: [
                     TextButton.icon(
@@ -110,13 +128,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context) => const HomePage()),
                         );
                       },
-                      icon:
-                          const Icon(Icons.home, color: Colors.white, size: 20),
+                      icon: const Icon(Icons.home, color: Colors.white, size: 20),
                       label: const Text('Inicio',
                           style: TextStyle(color: Colors.white)),
                     ),
                     TextButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const BuscarPage()), // Ajusta si el nombre de tu clase es distinto
+                        );
+                      },
                       icon: const Icon(Icons.search,
                           color: Colors.white, size: 18),
                       label: const Text('Buscar',

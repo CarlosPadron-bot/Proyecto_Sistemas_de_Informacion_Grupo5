@@ -61,4 +61,22 @@ class Auth {
   Future<void> cerrarSesion() async {
     await _auth.signOut();
   }
-}
+  // NUEVO MÉTODO: Obtener el rol del usuario desde Firestore usando su UID
+  Future<String?> obtenerRol(String uid) async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(uid)
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return data['rol'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print("Error al obtener el rol del usuario desde Firestore: $e");
+      return null;
+    }
+  }
+} // Cierre de la clase Auth
