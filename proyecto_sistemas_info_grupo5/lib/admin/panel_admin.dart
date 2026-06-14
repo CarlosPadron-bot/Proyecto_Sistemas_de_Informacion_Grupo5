@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
+import 'package:proyecto_sistemas_info_grupo5/admin/gestion_usuarios_dashboard.dart'; 
 
 class PanelAdmin extends StatefulWidget {
   const PanelAdmin({super.key});
@@ -12,32 +11,6 @@ class PanelAdmin extends StatefulWidget {
 
 class _PanelAdminState extends State<PanelAdmin> {
   int _selectedIndex = 0;
-
-  final CollectionReference _usuariosRef =
-      FirebaseFirestore.instance.collection('usuarios');
-
-  Future<void> _actualizarRol(String uid, String nuevoRol) async {
-    try {
-      await _usuariosRef.doc(uid).update({'rol': nuevoRol});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Rol actualizado a $nuevoRol exitosamente'),
-            backgroundColor: const Color(0xFF00B14F),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al actualizar: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +55,12 @@ class _PanelAdminState extends State<PanelAdmin> {
               ),
               const SizedBox(height: 30),
 
+              // --- AQUI SE LLAMAN LAS VISTAS SEGÚN LA PESTAÑA ---
               if (_selectedIndex == 0) _buildDashboardView(),
-              if (_selectedIndex == 1) _buildUserManagementView(),
+              
+              //  Llamamos al nuevo widget que creamos para gestionar usuarios
+              if (_selectedIndex == 1) const GestionUsuariosDashboard(), 
+              
               if (_selectedIndex > 1) 
                 const Center(
                   child: Padding(
@@ -219,81 +196,6 @@ class _PanelAdminState extends State<PanelAdmin> {
           const SizedBox(height: 20),
           Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildUserManagementView() {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 400),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: _usuariosRef.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF00B14F)));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No hay usuarios registrados.'));
-          }
-
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(), 
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              var userDoc = snapshot.data!.docs[index];
-              var userData = userDoc.data() as Map<String, dynamic>;
-              
-              String uid = userDoc.id;
-              String email = userData['email'] ?? 'Sin correo';
-              String rolActual = userData['rol'] ?? 'viajero';
-              bool esElAdminActual = uid == FirebaseAuth.instance.currentUser?.uid;
-
-              return Card(
-                elevation: 0,
-                color: Colors.grey[100],
-                margin: const EdgeInsets.only(bottom: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFD1FAE5),
-                    child: Icon(Icons.person, color: Color(0xFF059669)),
-                  ),
-                  title: Text(email, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Rol actual: ${rolActual.toUpperCase()}', style: const TextStyle(fontSize: 12)),
-                  trailing: esElAdminActual
-                      ? const Chip(label: Text('TÚ (Admin)'), backgroundColor: Colors.amber)
-                      : Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(5),
-                            color: Colors.white,
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: ['admin', 'operador', 'viajero'].contains(rolActual.toLowerCase()) 
-                                  ? rolActual.toLowerCase() 
-                                  : 'viajero',
-                              items: const [
-                                DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                                DropdownMenuItem(value: 'operador', child: Text('Operador')),
-                                DropdownMenuItem(value: 'viajero', child: Text('Viajero')),
-                              ],
-                              onChanged: (nuevoRol) {
-                                if (nuevoRol != null && nuevoRol != rolActual) {
-                                  _actualizarRol(uid, nuevoRol);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }
