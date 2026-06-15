@@ -40,11 +40,13 @@ class ItemCard extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12)),
                     // Usamos DecorationImage para poner la imagen de fondo en el contenedor
                     image: DecorationImage(
                       image: AssetImage(rutaImagen),
-                      fit: BoxFit.cover, // Hace que la imagen llene todo el espacio sin deformarse
+                      fit: BoxFit
+                          .cover, // Hace que la imagen llene todo el espacio sin deformarse
                     ),
                   ),
                 ),
@@ -52,14 +54,18 @@ class ItemCard extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.green, // Color de la etiqueta
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       categoria,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -74,19 +80,31 @@ class ItemCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    const Icon(Icons.location_on_outlined,
+                        size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Expanded(child: Text(ubicacion, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                    Expanded(
+                        child: Text(ubicacion,
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12),
+                            overflow: TextOverflow.ellipsis)),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(titulo,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
+                    const Icon(Icons.calendar_today_outlined,
+                        size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Text(infoExtra, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(infoExtra,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 13)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -95,16 +113,26 @@ class ItemCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text('\$$precio', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
-                        Text(' $tipoPrecio', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text('\$$precio',
+                            style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18)),
+                        Text(' $tipoPrecio',
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12)),
                       ],
                     ),
                     Row(
                       children: [
                         const Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
-                        Text('$calificacion', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text(' ($resenas)', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text('$calificacion',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(' ($resenas)',
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12)),
                       ],
                     )
                   ],

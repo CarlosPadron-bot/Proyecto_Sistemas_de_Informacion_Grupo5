@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/DetalleDestinoPage.dart';
 import '../../homepage/widgets/item_card.dart';
+import '../../modelos/destino_model.dart';
 
 class GridResultados extends StatelessWidget {
-  final String categoriaFiltro;
+  final String categoriaFiltro; // 'Todo', 'Paquetes Turisticos', 'Alojamientos'
   final double precioMaxFiltro;
-  final String estadoFiltro;
+  final String estadoFiltro; // 'Todos', 'Mérida', etc.
   final double calificacionMinFiltro;
 
   const GridResultados({
@@ -18,194 +20,105 @@ class GridResultados extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> destinos = [
-      // Sección de paquetes
-      {
-        'titulo': 'Isla la Tortuga',
-        'ubicacion': 'Dependencias Federales',
-        'info': '3 días · 6 cupos',
-        'precio': '150',
-        'tipo': '/persona',
-        'calificacion': 4.8,
-        'resenas': 24,
-        'estado': 'Todos',
-        'categoria': 'Paquetes Turisticos',
-        'rutaImagen': 'assets/isla_la_tortuga.png',
-      },
-      {
-        'titulo': 'Morrocoy',
-        'ubicacion': 'Falcón',
-        'info': '2 días · 10 cupos',
-        'precio': '80',
-        'tipo': '/persona',
-        'calificacion': 4.7,
-        'resenas': 42,
-        'estado': 'Falcón',
-        'categoria': 'Paquetes Turisticos',
-        'rutaImagen': 'assets/morrocoy.png',
-      },
-      {
-        'titulo': 'Roraima',
-        'ubicacion': 'Bolívar',
-        'info': '6 días · 4 cupos',
-        'precio': '350',
-        'tipo': '/persona',
-        'calificacion': 4.9,
-        'resenas': 18,
-        'estado': 'Bolívar',
-        'categoria': 'Paquetes Turisticos',
-        'rutaImagen': 'assets/salto_angel.png',
-      },
-      {
-        'titulo': 'Los Roques',
-        'ubicacion': 'Dependencias Federales',
-        'info': '4 días · 8 cupos',
-        'precio': '299',
-        'tipo': '/persona',
-        'calificacion': 4.9,
-        'resenas': 56,
-        'estado': 'Todos',
-        'categoria': 'Paquetes Turisticos',
-        'rutaImagen': 'assets/los_roques.png',
-      },
-      // Sección de alojamientos
-      {
-        'titulo': 'Galipan',
-        'ubicacion': 'La Guaira',
-        'info': 'Habitaciones confortables',
-        'precio': '45',
-        'tipo': '/noche',
-        'calificacion': 4.5,
-        'resenas': 28,
-        'estado': 'Caracas',
-        'categoria': 'Alojamientos',
-        'rutaImagen': 'assets/humbolt.png',
-      },
-      {
-        'titulo': 'Canaima',
-        'ubicacion': 'Parque Nacional Canaima',
-        'info': 'Cabañas y habitaciones',
-        'precio': '60',
-        'tipo': '/noche',
-        'calificacion': 4.6,
-        'resenas': 31,
-        'estado': 'Todos',
-        'categoria': 'Alojamientos',
-        'rutaImagen': 'assets/posada.png',
-      },
-      {
-        'titulo': 'Mérida',
-        'ubicacion': 'Mérida',
-        'info': 'Hermosa vista a las montañas',
-        'precio': '50',
-        'tipo': '/noche',
-        'calificacion': 4.8,
-        'resenas': 19,
-        'estado': 'Mérida',
-        'categoria': 'Alojamientos',
-        'rutaImagen': 'assets/caba_merida.png',
-      },
-    ];
+    // Escuchamos la colección de destinos completa
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('destinos').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF009933)));
+        }
 
-    final destinosFiltrados = destinos.where((dest) {
-      // Categoría
-      final bool cumpleCategoria =
-          (categoriaFiltro == 'Todo' || dest['categoria'] == categoriaFiltro);
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+              child: Text('No hay destinos publicados por el momento.'));
+        }
 
-      // Presupuesto
-      final double precioDestino =
-          double.tryParse(dest['precio'] ?? '0') ?? 0.0;
-      final bool cumplePrecio = precioDestino <= precioMaxFiltro;
+        // 1. Convertir los documentos a instancias de nuestro modelo Destino
+        List<Destino> listaDestinos = snapshot.data!.docs.map((doc) {
+          return Destino.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
 
-      // Estado del país
-      final bool cumpleEstado =
-          (estadoFiltro == 'Todos' || dest['estado'] == estadoFiltro);
+        // 2. Aplicación de los Filtros del Sidebar del Viajero en memoria dinámicamente
+        List<Destino> resultadosFiltrados = listaDestinos.where((destino) {
+          // Filtro por Categoría (Paquete / Alojamiento)
+          bool cumpleCategoria = true;
+          if (categoriaFiltro != 'Todo') {
+            // Mapeamos el filtro visual del frontend al guardado en base de datos
+            String catNormalizada = (categoriaFiltro == 'Paquetes Turisticos' ||
+                    categoriaFiltro == 'Paquetes')
+                ? 'Paquetes Turisticos'
+                : 'Alojamientos';
+            cumpleCategoria = (destino.categoria == catNormalizada);
+          }
 
-      // Calificación
-      final double calificacionDestino =
-          (dest['calificacion'] as num).toDouble();
-      final bool cumpleCalificacion =
-          calificacionDestino >= calificacionMinFiltro;
+          // Filtro por Precio Máximo
+          bool cumplePrecio = destino.precio <= precioMaxFiltro;
 
-      return cumpleCategoria &&
-          cumplePrecio &&
-          cumpleEstado &&
-          cumpleCalificacion;
-    }).toList();
+          // Filtro por Estado de Venezuela
+          bool cumpleEstado =
+              (estadoFiltro == 'Todos' || destino.estado == estadoFiltro);
 
-    if (destinosFiltrados.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text(
-            'No se encontraron resultados que coincidan con los filtros aplicados.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          return cumpleCategoria && cumplePrecio && cumpleEstado;
+        }).toList();
+
+        if (resultadosFiltrados.isEmpty) {
+          return const Center(
+            child: Text(
+                'No se encontraron destinos que coincidan con los filtros aplicados.'),
+          );
+        }
+
+        // 3. Renderizado del catálogo dinámico
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3, // Ideal para pantallas de escritorio/web unimet
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.85,
           ),
-        ),
-      );
-    }
+          itemCount: resultadosFiltrados.length,
+          itemBuilder: (context, index) {
+            final destino = resultadosFiltrados[index];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Resultados encontrados: ${destinosFiltrados.length}',
-          style:
-              const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.85,
-            ),
-            itemCount: destinosFiltrados.length,
-            itemBuilder: (context, index) {
-              final destino = destinosFiltrados[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetalleDestinoPage(
-                        title: destino['titulo'],
-                        location: destino['ubicacion'],
-                        price: destino['precio'],
-                        priceSuffix: destino['tipo'],
-                        rating: destino['calificacion'].toString(),
-                        reviewCount: destino['resenas'].toString(),
-                        imageUrl: destino["rutaImagen"],
-                        description:
-                            'Descripción detallada de ${destino['titulo']}.',
-                        includes: const [
-                          'Traslado',
-                          'Alojamiento',
-                          'Guía turístico'
-                        ],
-                      ),
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetalleDestinoPage(
+                      title: destino.nombre,
+                      location: destino.ubicacion,
+                      price: destino.precio.toStringAsFixed(0),
+                      priceSuffix: destino.categoria == 'Alojamientos'
+                          ? '/noche'
+                          : '/persona',
+                      rating: "5.0", // Base inicial para maquetación de reseñas
+                      reviewCount: "0",
+                      imageUrl: destino.urlImagen,
+                      description: destino.descripcion,
+                      includes: destino.queIncluye,
                     ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: ItemCard(
-                  titulo: destino['titulo'],
-                  ubicacion: destino['ubicacion'],
-                  infoExtra: destino['info'],
-                  precio: destino['precio'],
-                  tipoPrecio: destino['tipo'],
-                  calificacion: destino['calificacion'],
-                  resenas: destino['resenas'],
-                  categoria: destino['categoria'],
-                  rutaImagen: destino["rutaImagen"],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: ItemCard(
+                titulo: destino.nombre,
+                ubicacion: destino.ubicacion,
+                infoExtra: destino.infoExtra,
+                precio: destino.precio.toStringAsFixed(0),
+                tipoPrecio:
+                    destino.categoria == 'Alojamientos' ? '/noche' : '/persona',
+                calificacion: 5.0,
+                resenas: 0,
+                categoria: destino.categoria,
+                rutaImagen: destino.urlImagen,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

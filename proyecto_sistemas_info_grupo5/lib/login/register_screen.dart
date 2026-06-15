@@ -44,18 +44,25 @@ class RegisterState extends State<RegisterScreen> {
       // --- INICIO DE LA SOLUCIÓN DEL NOMBRE ---
       // Obtenemos al usuario que se acaba de crear y loguear
       User? currentUser = FirebaseAuth.instance.currentUser;
-      
+
       if (currentUser != null) {
         // 1. Actualiza el nombre en Firebase Auth (Para que el header lo lea rápido)
         await currentUser.updateDisplayName(username);
 
         // 2. Aseguramos que se guarde en Firestore bajo el campo 'username'
-        await FirebaseFirestore.instance.collection('usuarios').doc(currentUser.uid).set({
-          'username': username,
-          'email': email,
-          'rol': _rolSeleccionado,
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)); // 'merge' evita borrar datos si _authService ya había creado el documento
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(currentUser.uid)
+            .set(
+                {
+              'username': username,
+              'email': email,
+              'rol': _rolSeleccionado,
+              'createdAt': FieldValue.serverTimestamp(),
+            },
+                SetOptions(
+                    merge:
+                        true)); // 'merge' evita borrar datos si _authService ya había creado el documento
       }
       // --- FIN DE LA SOLUCIÓN DEL NOMBRE ---
 
@@ -71,7 +78,11 @@ class RegisterState extends State<RegisterScreen> {
           // Usamos pushAndRemoveUntil para que no puedan darle "Atrás" y volver al registro
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const CargarDestinoPage()),
+            MaterialPageRoute(
+              builder: (context) => const CargarDestinoPage(
+                categoriaInicial: 'Paquetes Turisticos',
+              ),
+            ),
             (route) => false,
           );
         } else {
@@ -97,7 +108,8 @@ class RegisterState extends State<RegisterScreen> {
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
-    usernameController.dispose(); // Es buena práctica limpiar todos los controladores
+    usernameController
+        .dispose(); // Es buena práctica limpiar todos los controladores
     super.dispose();
   }
 
