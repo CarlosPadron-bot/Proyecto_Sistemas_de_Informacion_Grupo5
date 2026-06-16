@@ -37,7 +37,8 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => AuthWrapper(),
+        '/': (context) => const HomePage(),
+        '/auth': (context) =>  AuthWrapper(),
         '/success': (context) => const HomePage(),
         '/reservas': (context) => const VistaReservasPage(),
       },

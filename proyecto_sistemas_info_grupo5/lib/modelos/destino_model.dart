@@ -5,10 +5,10 @@ class Destino {
   final double precio;
   final String descripcion;
   final String urlImagen;
-  final String categoria; // 'Paquetes Turisticos' o 'Alojamientos'
-  final String infoExtra; // Ej: "3 días · 6 cupos" o "Por noche"
-  final List<String> queIncluye; // Ej: ['Traslado', 'Guía']
-  final String estado; // Estado de Venezuela (Mérida, Falcón, Caracas, etc.)
+  final String categoria; 
+  final String infoExtra; 
+  final List<String> queIncluye; 
+  final String estado; 
 
   Destino({
     this.id,
@@ -23,6 +23,7 @@ class Destino {
     required this.estado,
   });
 
+  /// Método para convertir el objeto a un Map (Para GUARDAR en Firestore)
   Map<String, dynamic> toMap() {
     return {
       'nombre': nombre,
@@ -37,7 +38,8 @@ class Destino {
     };
   }
 
-  factory Destino.fromMap(Map<String, dynamic> map, String documentId) {
+  /// Factory para crear un objeto a partir de un Map (Para LEER de Firestore)
+  factory Destino.fromFirestore(String documentId, Map<String, dynamic> map) {
     return Destino(
       id: documentId,
       nombre: map['nombre'] ?? '',
@@ -51,4 +53,34 @@ class Destino {
       estado: map['estado'] ?? 'Otros',
     );
   }
+
+  /// Método copyWith para crear copias del objeto modificando campos específicos
+  /// (Ideal para trabajar con variables 'final')
+  Destino copyWith({
+    String? id,
+    String? nombre,
+    String? ubicacion,
+    double? precio,
+    String? descripcion,
+    String? urlImagen,
+    String? categoria,
+    String? infoExtra,
+    List<String>? queIncluye,
+    String? estado,
+  }) {
+    return Destino(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      ubicacion: ubicacion ?? this.ubicacion,
+      precio: precio ?? this.precio,
+      descripcion: descripcion ?? this.descripcion,
+      urlImagen: urlImagen ?? this.urlImagen,
+      categoria: categoria ?? this.categoria,
+      infoExtra: infoExtra ?? this.infoExtra,
+      queIncluye: queIncluye ?? this.queIncluye,
+      estado: estado ?? this.estado,
+    );
+  }
+
+  static Object? fromMap(Map<String, dynamic> data, String id) {}
 }

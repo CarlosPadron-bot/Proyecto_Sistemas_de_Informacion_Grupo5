@@ -3,6 +3,7 @@ import '../widgets_generales/header_gen.dart';
 import 'widgets/sidebar_filtros.dart';
 import 'widgets/grid_resultados.dart';
 
+
 class BuscarPage extends StatefulWidget {
   const BuscarPage({super.key});
 

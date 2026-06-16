@@ -197,9 +197,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     );
   }
 
-  Widget _buildContenidoIzquierdo() {
-    final bool esUrlDeRed = widget.imageUrl.startsWith('http://') ||
-        widget.imageUrl.startsWith('https://');
+ Widget _buildContenidoIzquierdo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -212,25 +210,8 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(12)),
-            child: widget.imageUrl.isNotEmpty
-                ? (esUrlDeRed
-                    ? Image.network(
-                        widget.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.image_not_supported,
-                              size: 80, color: Colors.grey);
-                        },
-                      )
-                    : Image.asset(
-                        widget.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.image_not_supported,
-                              size: 80, color: Colors.grey);
-                        },
-                      ))
-                : const Icon(Icons.image, size: 80, color: Colors.grey),
+            // Aquí llamamos a la nueva función que detecta el tipo de imagen
+            child: _buildImage(widget.imageUrl),
           ),
         ),
         const SizedBox(height: 20),
@@ -353,6 +334,40 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
         ),
       ],
     );
+  }
+
+  // --- NUEVA FUNCIÓN PARA PROCESAR LA IMAGEN ---
+  Widget _buildImage(String rutaImagen) {
+    if (rutaImagen.isEmpty) {
+      return const Center(
+          child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey));
+    }
+
+    if (rutaImagen.startsWith('base64,')) {
+      try {
+        return Image.memory(
+          base64Decode(rutaImagen.substring(7)),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 420,
+          errorBuilder: (context, error, stackTrace) => const Center(
+              child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
+        );
+      } catch (e) {
+        return const Center(
+            child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey));
+      }
+    } else {
+      // Si no es Base64, asumimos que es un Link web normal
+      return Image.network(
+        rutaImagen,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 420,
+        errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
+      );
+    }
   }
 
   Widget _buildCajaReserva(double precioIndividual, double total) {

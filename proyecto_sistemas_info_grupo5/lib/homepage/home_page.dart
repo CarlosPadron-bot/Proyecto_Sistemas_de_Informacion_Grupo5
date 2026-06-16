@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import '../buscar/buscar_page.dart';
 import '../profile/profile_screen.dart';
-import 'DetalleDestinoPage.dart'; // <-- CORREGIDO: Se agregó el punto y coma (;) que faltaba
+import 'DetalleDestinoPage.dart';
+import 'dart:convert';
 
 // ==========================================
 // MÓDULO: HOMEPAGE (CON SALUDO PERSONALIZADO)
@@ -25,7 +26,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // Fondo claro neutro
       appBar:
-          const CustomHeader(), // <-- CORREGIDO: Se quitó el 'const' que generaba el error
+          const CustomHeader(), 
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +105,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// WIDGET CARRUSEL HORIZONTAL DINÁMICO
+// WIDGET CARRUSEL HORIZONTAL DINÁMICO (FILTRADO EN FLUTTER)
 // ==========================================
 class HorizontalCarousel extends StatelessWidget {
   final bool isAccommodation;
@@ -113,138 +114,125 @@ class HorizontalCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Datos locales para Paquetes Turísticos
-    final List<Map<String, dynamic>> paquetesDestacados = [
-      {
-        'titulo': 'Aventura Los Roques 3 Días',
-        'ubicacion': 'Los Roques, Dependencias Federales',
-        'info': '3 días · 6 cupos',
-        'precio': '280',
-        'tipo': '/persona',
-        'calificacion': 4.9,
-        'resenas': 56,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/isla_la_tortuga.png',
-      },
-      {
-        'titulo': 'Salto Ángel Express 2 Días',
-        'ubicacion': 'Canaima, Bolívar',
-        'info': '2 días · 12 cupos',
-        'precio': '195',
-        'tipo': '/persona',
-        'calificacion': 4.7,
-        'resenas': 43,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/salto_angel.png',
-      },
-      {
-        'titulo': 'Ruta Andina Económica 4 Días',
-        'ubicacion': 'Mérida, Mérida',
-        'info': '4 días · 15 cupos',
-        'precio': '165',
-        'tipo': '/persona',
-        'calificacion': 4.6,
-        'resenas': 38,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/merida.png',
-      },
-      {
-        'titulo': 'Morrocoy Fin de Semana',
-        'ubicacion': 'Parque Nacional Morrocoy',
-        'info': '2 días · 10 cupos',
-        'precio': '120',
-        'tipo': '/persona',
-        'calificacion': 5.0,
-        'resenas': 91,
-        'categoria': 'Paquete',
-        'rutaImagen': 'assets/morrocoy.png',
-      },
-    ];
-
-    // Datos locales para Alojamientos
-    final List<Map<String, dynamic>> alojamientosEconomicos = [
-      {
-        'titulo': 'Posada Los Roques Paradise',
-        'ubicacion': 'Gran Roque, Los Roques',
-        'info': 'Hasta 6 personas',
-        'precio': '45',
-        'tipo': '/noche',
-        'calificacion': 4.8,
-        'resenas': 24,
-        'categoria': 'Posada',
-        'rutaImagen': 'assets/los_roques.png',
-      },
-      {
-        'titulo': 'Camping Canaima',
-        'ubicacion': 'Parque Nacional Canaima',
-        'info': 'Hasta 4 personas',
-        'precio': '15',
-        'tipo': '/noche',
-        'calificacion': 4.5,
-        'resenas': 18,
-        'categoria': 'Camping',
-        'rutaImagen': 'assets/posada.png',
-      },
-      {
-        'titulo': 'Cabaña Montaña Mérida',
-        'ubicacion': 'Los Nevados, Mérida',
-        'info': 'Hasta 8 personas',
-        'precio': '35',
-        'tipo': '/noche',
-        'calificacion': 4.4,
-        'resenas': 31,
-        'categoria': 'Cabaña',
-        'rutaImagen': 'assets/caba_merida.png',
-      },
-    ];
-
-    final listaAUsar =
-        isAccommodation ? alojamientosEconomicos : paquetesDestacados;
-
     return SizedBox(
       height: 350,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: listaAUsar.length,
-        itemBuilder: (context, index) {
-          final destino = listaAUsar[index];
+      // 1. Quitamos el .where() de la consulta para traer TODOS los destinos
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('destinos') 
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+            );
+          }
 
-          return Container(
-            width: 280,
-            margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetalleDestinoPage(
-                      title: destino['titulo'],
-                      location: destino['ubicacion'],
-                      price: destino['precio'],
-                      priceSuffix: destino['tipo'],
-                      rating: destino['calificacion'].toString(),
-                      reviewCount: destino['resenas'].toString(),
-                      imageUrl: destino['rutaImagen'] ?? '',
-                      description:
-                          'Disfruta de una experiencia única explorando ${destino['titulo']}.',
-                      includes: const ['Traslados', 'Hospedaje', 'Guía local'],
-                    ),
-                  ),
-                );
-              },
-              child: ItemCard(
-                titulo: destino['titulo'],
-                ubicacion: destino['ubicacion'],
-                infoExtra: destino['info'],
-                precio: destino['precio'],
-                tipoPrecio: destino['tipo'],
-                calificacion: destino['calificacion'],
-                resenas: destino['resenas'],
-                categoria: destino['categoria'],
-                rutaImagen: destino['rutaImagen'],
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text('Error al cargar los destinos.'),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                isAccommodation 
+                    ? 'No hay alojamientos disponibles aún.' 
+                    : 'No hay paquetes disponibles aún.',
+                style: const TextStyle(color: Colors.grey),
               ),
-            ),
+            );
+          }
+
+          // 2. Obtenemos la lista completa de documentos de la base de datos
+          final todosLosDestinos = snapshot.data!.docs;
+
+          // 3. FILTRAMOS EN FLUTTER: Aplicamos tu lógica de descarte
+          final destinos = todosLosDestinos.where((doc) {
+            final destinoData = doc.data() as Map<String, dynamic>;
+            // Si el campo 'categoria' no existe, le asignamos un texto vacío ''
+            final String categoria = destinoData['categoria'] ?? '';
+
+            if (isAccommodation) {
+              // Para la sección de alojamientos, solo pasan los que digan 'Alojamientos'
+              return categoria == 'Alojamientos';
+            } else {
+              // Para los paquetes, pasa TODO lo que NO sea 'Alojamientos'
+              // (Esto incluye hilos que no tengan la propiedad 'categoria')
+              return categoria != 'Alojamientos';
+            }
+          }).toList();
+
+          // 4. Validación: Si después de filtrar la lista quedó vacía
+          if (destinos.isEmpty) {
+            return Center(
+              child: Text(
+                isAccommodation 
+                    ? 'No hay alojamientos disponibles aún.' 
+                    : 'No hay paquetes disponibles aún.',
+                style: const TextStyle(color: Colors.grey),
+              ),
+            );
+          }
+
+          // 5. Construimos la lista con los resultados filtrados
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: destinos.length,
+            itemBuilder: (context, index) {
+              final destinoData = destinos[index].data() as Map<String, dynamic>;
+
+              final String titulo = destinoData['nombre'] ?? 'Sin título';
+              final String ubicacion = destinoData['ubicacion'] ?? 'Ubicación desconocida';
+              final String infoExtra = destinoData['infoExtra'] ?? '';
+              final String precio = destinoData['precio']?.toString() ?? '0';
+              final String urlImagen = destinoData['urlImagen'] ?? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
+              
+              final double calificacion = destinoData['calificacion']?.toDouble() ?? 5.0;
+              final int resenas = destinoData['resenas'] ?? 0;
+              final String tipoPrecio = isAccommodation ? '/noche' : '/persona';
+
+              final List<dynamic> incluyeDynamic = destinoData['queIncluye'] ?? [];
+              final List<String> incluye = incluyeDynamic.map((e) => e.toString()).toList();
+
+              return Container(
+                width: 280,
+                margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetalleDestinoPage(
+                          title: titulo,
+                          location: ubicacion,
+                          price: precio,
+                          priceSuffix: tipoPrecio,
+                          rating: calificacion.toString(),
+                          reviewCount: resenas.toString(),
+                          imageUrl: urlImagen,
+                          description: destinoData['descripcion'] ?? 'Disfruta de una experiencia única explorando $titulo.',
+                          includes: incluye.isEmpty ? const ['Traslados', 'Hospedaje', 'Guía local'] : incluye,
+                        ),
+                      ),
+                    );
+                  },
+                  child: ItemCard(
+                    titulo: titulo,
+                    ubicacion: ubicacion,
+                    infoExtra: infoExtra,
+                    precio: precio,
+                    tipoPrecio: tipoPrecio,
+                    calificacion: calificacion,
+                    resenas: resenas,
+                    categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
+                    rutaImagen: urlImagen, 
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -302,18 +290,7 @@ class ItemCard extends StatelessWidget {
               ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  rutaImagen,
-                  height: 125,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 125,
-                    color: Colors.grey[300],
-                    child:
-                        const Icon(Icons.image, color: Colors.grey, size: 40),
-                  ),
-                ),
+                child: _buildImage(), // Llama a la nueva función que creamos abajo
               ),
               Positioned(
                 top: 8,
@@ -411,6 +388,49 @@ class ItemCard extends StatelessWidget {
       ),
     );
   }
+
+  // --- NUEVA FUNCIÓN PARA RENDERIZAR LA IMAGEN CORRECTAMENTE ---
+  Widget _buildImage() {
+    // Si la ruta viene vacía por alguna razón, mostramos el cuadro de error
+    if (rutaImagen.isEmpty) {
+      return _errorPlaceholder();
+    }
+
+    // 1. Validamos si es una imagen en texto Base64
+    if (rutaImagen.startsWith('base64,')) {
+      try {
+        return Image.memory(
+          base64Decode(rutaImagen.substring(7)), // Quitamos el 'base64,'
+          height: 125,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _errorPlaceholder(),
+        );
+      } catch (e) {
+        return _errorPlaceholder();
+      }
+    } 
+    // 2. Si no es Base64, asumimos que es un Link de Internet (Network)
+    else {
+      return Image.network(
+        rutaImagen,
+        height: 125,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _errorPlaceholder(),
+      );
+    }
+  }
+
+  // Cuadro gris de repuesto si la imagen falla al cargar
+  Widget _errorPlaceholder() {
+    return Container(
+      height: 125,
+      width: double.infinity,
+      color: Colors.grey[300],
+      child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
+    );
+  }
 }
 
 // Títulos de Sección
@@ -435,12 +455,12 @@ class SectionTitle extends StatelessWidget {
 class BannerPrincipal extends StatelessWidget {
   const BannerPrincipal({super.key});
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24.0),
-      color: const Color(0xFF2E7D32), // El verde clarito y fresco de inicio
+      color: const Color(0xFF2E7D32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -460,7 +480,13 @@ class BannerPrincipal extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              // LÓGICA DE NAVEGACIÓN AÑADIDA AQUÍ
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BuscarPage()),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor:

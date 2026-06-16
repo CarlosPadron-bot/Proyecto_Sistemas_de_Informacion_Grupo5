@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart'; // Para kIsWeb
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class CargarDestinoPage extends StatefulWidget {
   final String categoriaInicial; // 'Paquetes Turisticos' o 'Alojamientos'
@@ -20,13 +25,15 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
   final TextEditingController _ubicacionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
-  final TextEditingController _urlImagenController = TextEditingController();
   final TextEditingController _infoExtraController = TextEditingController();
-  final TextEditingController _incluyeController =
-      TextEditingController(); // Separados por comas
+  final TextEditingController _incluyeController = TextEditingController(); // Separados por comas
 
   String _estadoSeleccionado = 'Caracas';
   bool _cargando = false;
+
+  // Variables para la imagen
+  XFile? _imagenSeleccionada;
+  final ImagePicker _picker = ImagePicker();
 
   final List<String> _estados = [
     'Mérida',
@@ -38,6 +45,39 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
     'Nueva Esparta',
     'Otros'
   ];
+
+  Future<void> _seleccionarImagen() async {
+    // MODIFICACIÓN: Ya no comprimimos de forma agresiva aquí.
+    // Capturamos la imagen con dimensiones máximas generosas para conservar detalles minuciosOS.
+    final XFile? imagen = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920, // Resolución Full HD máxima para conservar la nitidez original
+      maxHeight: 1080,
+    );
+    if (imagen != null) {
+      setState(() {
+        _imagenSeleccionada = imagen;
+      });
+    }
+  }
+
+  // 2. NUEVA FUNCIÓN OPTIMIZADA DE COMPRESIÓN AVANZADA
+  Future<Uint8List> _comprimirBytes(Uint8List bytesOriginales) async {
+    try {
+      final Uint8List bytesComprimidos = await FlutterImageCompress.compressWithList(
+        bytesOriginales,
+        minWidth: 800,       
+        minHeight: 600,      
+        quality: 75,         
+        format: CompressFormat.jpeg, 
+      );
+      return bytesComprimidos;
+    } catch (e) {
+      // Si la compresión falla por algún motivo externo, devolvemos los bytes originales para no romper el flujo
+      debugPrint("Error en compresión avanzada: $e");
+      return bytesOriginales;
+    }
+  }
 
   void _publicarDestino() async {
     if (!_formKey.currentState!.validate()) return;
@@ -55,14 +95,29 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
       double precioDouble =
           double.tryParse(_precioController.text.trim()) ?? 0.0;
 
+      String imagenBase64 = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7'; // Mantenemos el fallback
+
+      // --- LÓGICA MODIFICADA CON COMPRESIÓN AVANZADA ---
+      if (_imagenSeleccionada != null) {
+        // Extraemos los bytes de la imagen original elegida
+        final bytesOriginales = await _imagenSeleccionada!.readAsBytes();
+        
+        // Ejecutamos la compresión inteligente antes de transformarlo en texto
+        final bytesOptimizados = await _comprimirBytes(bytesOriginales);
+        
+        // Convertimos los bytes optimizados a la cadena Base64
+        String base64String = base64Encode(bytesOptimizados);
+        
+        imagenBase64 = 'base64,$base64String'; 
+      }
+      // --------------------------------------------------------------
+
       Destino nuevoDestino = Destino(
         nombre: _nombreController.text.trim(),
         ubicacion: _ubicacionController.text.trim(),
         precio: precioDouble,
         descripcion: _descripcionController.text.trim(),
-        urlImagen: _urlImagenController.text.trim().isEmpty
-            ? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7' // Fallback elegante
-            : _urlImagenController.text.trim(),
+        urlImagen: imagenBase64,
         categoria: widget.categoriaInicial,
         infoExtra: _infoExtraController.text.trim().isEmpty
             ? (widget.categoriaInicial == 'Alojamientos'
@@ -199,12 +254,47 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                     : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _urlImagenController,
-                decoration: const InputDecoration(
-                    labelText: 'URL de la imagen de portada',
-                    border: OutlineInputBorder()),
+              
+              const Text(
+                'Imagen de portada',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _seleccionarImagen,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    border: Border.all(color: Colors.grey[400]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _imagenSeleccionada == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined,
+                                size: 50, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text(
+                              'Haz clic para subir una imagen',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: kIsWeb
+                              ? Image.network(_imagenSeleccionada!.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(_imagenSeleccionada!.path),
+                                  fit: BoxFit.cover),
+                        ),
+                ),
+              ),
+
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
