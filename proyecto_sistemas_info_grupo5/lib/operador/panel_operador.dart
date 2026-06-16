@@ -91,17 +91,18 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  // FUNCIÓN PARA EDITAR
+  // EDITAR DESTINO
   void _editarDestino(Destino destino) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CargarDestinoPage(
           categoriaInicial: destino.categoria,
+          destinoAEditar: destino,
         ),
       ),
     ).then((_) {
-      setState(() {});
+      setState(() {}); // Refrescar la tabla al volver
     });
   }
 
@@ -328,7 +329,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                   MaterialPageRoute(
                       builder: (context) =>
                           CargarDestinoPage(categoriaInicial: categoria)),
-                ).then((_) => setState(() {}));
+                ).then((_) => setState(() {})); // Refrescar al volver
               },
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
