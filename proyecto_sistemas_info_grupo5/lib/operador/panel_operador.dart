@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
 import 'package:proyecto_sistemas_info_grupo5/cargar_destino_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
@@ -13,7 +14,8 @@ class PanelOperador extends StatefulWidget {
 
 class _PanelOperadorState extends State<PanelOperador> {
   int _selectedIndex = 0;
-  final DestinoService _destinoService = DestinoService(); // Instancia del servicio
+  final DestinoService _destinoService =
+      DestinoService(); // Instancia del servicio
 
   // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
   void _confirmarEliminacion(Destino destino) {
@@ -21,12 +23,15 @@ class _PanelOperadorState extends State<PanelOperador> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
               SizedBox(width: 10),
-              Text('Eliminar Servicio', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              Text('Eliminar Servicio',
+                  style: TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Text(
@@ -35,8 +40,9 @@ class _PanelOperadorState extends State<PanelOperador> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), 
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey, fontSize: 16)),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.grey, fontSize: 16)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -47,39 +53,44 @@ class _PanelOperadorState extends State<PanelOperador> {
                 if (destino.id == null || destino.id!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Error: Este destino no tiene un ID válido asignado.'), 
-                      backgroundColor: Colors.red
-                    ),
+                        content: Text(
+                            'Error: Este destino no tiene un ID válido asignado.'),
+                        backgroundColor: Colors.red),
                   );
                   return; // Detenemos la ejecución aquí
                 }
 
                 try {
-                  // 2. AHORA SÍ PODEMOS USAR EL ID DE FORMA SEGURA
                   await _destinoService.eliminarDestino(destino.id!);
-                  
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Servicio eliminado con éxito'), backgroundColor: Colors.red),
+                      const SnackBar(
+                          content: Text('Servicio eliminado con éxito'),
+                          backgroundColor: Colors.red),
                     );
                     setState(() {}); // Refresca la pantalla
                   }
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error al eliminar: $e'), backgroundColor: Colors.red),
+                      SnackBar(
+                          content: Text('Error al eliminar: $e'),
+                          backgroundColor: Colors.red),
                     );
                   }
                 }
               },
-              child: const Text('Sí, eliminar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Sí, eliminar',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );
       },
     );
   }
-  
+
   // FUNCIÓN PARA EDITAR
   void _editarDestino(Destino destino) {
     Navigator.push(
@@ -87,12 +98,10 @@ class _PanelOperadorState extends State<PanelOperador> {
       MaterialPageRoute(
         builder: (context) => CargarDestinoPage(
           categoriaInicial: destino.categoria,
-          destinoAEditar: destino, // Le pasamos los datos a la página
         ),
       ),
     ).then((_) {
-      // Cuando el usuario regrese de la pantalla de edición, refrescamos la tabla
-      setState(() {}); 
+      setState(() {});
     });
   }
 
@@ -108,14 +117,18 @@ class _PanelOperadorState extends State<PanelOperador> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Panel de Operador',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87)),
               const SizedBox(height: 5),
               const Text('Gestión y análisis de tus servicios y clientes',
                   style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 30),
 
               Container(
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.black12))),
+                decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.black12))),
                 child: Row(
                   children: [
                     _buildTabItem('Dashboard', Icons.show_chart, 0),
@@ -124,16 +137,18 @@ class _PanelOperadorState extends State<PanelOperador> {
                     const SizedBox(width: 20),
                     _buildTabItem('Alojamientos', Icons.home_work_outlined, 2),
                     const SizedBox(width: 20),
-                    _buildTabItem('Reservas', Icons.people_outline, 3),
+                    _buildTabItem('Reseñas', Icons.people_outline, 3),
                   ],
                 ),
               ),
               const SizedBox(height: 30),
 
-              // CONTENIDO TABS DINÁMICO Y ESTÁTICO UNIFICADO
+              // Contenido de las tabs
               if (_selectedIndex == 0) _buildTabDashboard(),
-              if (_selectedIndex == 1) _buildTabServiciosDinamico('Paquetes Turisticos'),
-              if (_selectedIndex == 2) _buildTabServiciosDinamico('Alojamientos'),
+              if (_selectedIndex == 1)
+                _buildTabServiciosDinamico('Paquetes Turisticos'),
+              if (_selectedIndex == 2)
+                _buildTabServiciosDinamico('Alojamientos'),
               if (_selectedIndex == 3) _buildTabReservas(),
             ],
           ),
@@ -150,23 +165,30 @@ class _PanelOperadorState extends State<PanelOperador> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: isSelected ? const Color(0xFF00B14F) : Colors.transparent, width: 3),
+            bottom: BorderSide(
+                color:
+                    isSelected ? const Color(0xFF00B14F) : Colors.transparent,
+                width: 3),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600]),
+            Icon(icon,
+                size: 18,
+                color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600]),
             const SizedBox(width: 8),
-            Text(title, style: TextStyle(
-                color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600],
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text(title,
+                style: TextStyle(
+                    color:
+                        isSelected ? const Color(0xFF00B14F) : Colors.grey[600],
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal)),
           ],
         ),
       ),
     );
   }
 
-  // --- TAB DASHBOARD RECUPERADA DEL CÓDIGO ANTIGUO ---
   Widget _buildTabDashboard() {
     return Column(
       children: [
@@ -288,7 +310,7 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  // --- TABLA DINÁMICA QUE LEE DE FIREBASE ---
+  // TABLA DINÁMICA QUE LEE DE FIREBASE
   Widget _buildTabServiciosDinamico(String categoria) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,50 +319,68 @@ class _PanelOperadorState extends State<PanelOperador> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Gestión de $categoria',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => CargarDestinoPage(categoriaInicial: categoria)),
-                ).then((_) => setState(() {})); // Refrescar al volver
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          CargarDestinoPage(categoriaInicial: categoria)),
+                ).then((_) => setState(() {}));
               },
               icon: const Icon(Icons.add, color: Colors.white),
-              label: Text('Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',
+              label: Text(
+                  'Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',
                   style: const TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009933)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF009933)),
             ),
           ],
         ),
         const SizedBox(height: 20),
         Container(
           width: double.infinity,
-          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(8)),
-          // StreamBuilder para leer los datos EN TIEMPO REAL de Firebase
+          decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(8)),
           child: StreamBuilder<List<Destino>>(
-            stream: _destinoService.obtenerDestinosStream(), 
+            stream: _destinoService.obtenerDestinosStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()));
+                return const Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Center(child: CircularProgressIndicator()));
               }
               if (snapshot.hasError) {
-                return Padding(padding: const EdgeInsets.all(20), child: Text('Error: ${snapshot.error}'));
+                return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text('Error: ${snapshot.error}'));
               }
 
-              // Filtramos la lista según la pestaña en la que estemos
-              final destinos = snapshot.data?.where((d) => d.categoria == categoria).toList() ?? [];
+              final destinos = snapshot.data
+                      ?.where((d) => d.categoria == categoria)
+                      .toList() ??
+                  [];
 
               if (destinos.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(40),
-                  child: Center(child: Text('Aún no has publicado servicios en esta categoría.', style: TextStyle(color: Colors.grey))),
+                  child: Center(
+                      child: Text(
+                          'Aún no has publicado servicios en esta categoría.',
+                          style: TextStyle(color: Colors.grey))),
                 );
               }
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                  dataRowMaxHeight: 85,
+                  dataRowMinHeight: 75,
+                  headingTextStyle: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black),
                   columns: const [
                     DataColumn(label: Text('Imagen')),
                     DataColumn(label: Text('Nombre')),
@@ -348,7 +388,9 @@ class _PanelOperadorState extends State<PanelOperador> {
                     DataColumn(label: Text('Precio')),
                     DataColumn(label: Text('Acciones')),
                   ],
-                  rows: destinos.map((destino) => _crearFilaTabla(destino)).toList(),
+                  rows: destinos
+                      .map((destino) => _crearFilaTabla(destino))
+                      .toList(),
                 ),
               );
             },
@@ -358,32 +400,67 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  // --- FILA DE TABLA VINCULADA AL MODELO FIREBASE ---
+  Widget _construirImagenDestino(String url) {
+    if (url.isEmpty) {
+      return const Icon(Icons.image, color: Colors.grey, size: 24);
+    }
+
+    if (url.startsWith('base64,')) {
+      try {
+        final String cadenaLimpia = url.replaceFirst('base64,', '');
+        return Image.memory(
+          base64Decode(cadenaLimpia),
+          fit: BoxFit.cover,
+        );
+      } catch (e) {
+        return const Icon(Icons.broken_image_outlined,
+            color: Colors.red, size: 24);
+      }
+    }
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Icons.image_not_supported, color: Colors.grey, size: 24),
+    );
+  }
+
   DataRow _crearFilaTabla(Destino destino) {
     return DataRow(cells: [
-      DataCell(Container(
-        width: 50, height: 50, color: Colors.grey[300],
-        child: const Icon(Icons.image, color: Colors.grey),
-      )),
-      DataCell(Text(destino.nombre)),
+      DataCell(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              width: 115,
+              height: 85,
+              color: Colors.grey[100],
+              child: _construirImagenDestino(destino.urlImagen),
+            ),
+          ),
+        ),
+      ),
+      DataCell(Text(destino.nombre,
+          style: const TextStyle(fontWeight: FontWeight.w500))),
       DataCell(Text(destino.ubicacion)),
-      DataCell(Text('\$${destino.precio}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+      DataCell(Text('\$${destino.precio}',
+          style: const TextStyle(
+              color: Colors.green, fontWeight: FontWeight.bold))),
       DataCell(Row(children: [
-        // BOTÓN EDITAR
         IconButton(
           icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-          onPressed: () => _editarDestino(destino), 
+          onPressed: () => _editarDestino(destino),
         ),
-        // BOTÓN ELIMINAR
         IconButton(
           icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-          onPressed: () => _confirmarEliminacion(destino), 
+          onPressed: () => _confirmarEliminacion(destino),
         ),
       ])),
     ]);
   }
 
-  // --- TAB RESERVAS RECUPERADA DEL CÓDIGO ANTIGUO ---
   Widget _buildTabReservas() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +468,6 @@ class _PanelOperadorState extends State<PanelOperador> {
         const Text('Gestión de Reservas',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
-        // Nota: Estos datos son estáticos por ahora, se pueden conectar a ReservaService después
         _buildReservaCard('Aventura Los Roques', 'Paquete • res1',
             'Check-in: 2026-05-15', '\$280', 'Pagado', Colors.green),
         _buildReservaCard('Cabaña Montaña', 'Alojamiento • res2',

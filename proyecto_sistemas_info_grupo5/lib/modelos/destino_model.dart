@@ -5,10 +5,10 @@ class Destino {
   final double precio;
   final String descripcion;
   final String urlImagen;
-  final String categoria; 
-  final String infoExtra; 
-  final List<String> queIncluye; 
-  final String estado; 
+  final String categoria;
+  final String infoExtra;
+  final List<String> queIncluye;
+  final String estado;
 
   Destino({
     this.id,
@@ -81,6 +81,4 @@ class Destino {
       estado: estado ?? this.estado,
     );
   }
-
-  static Object? fromMap(Map<String, dynamic> data, String id) {}
 }

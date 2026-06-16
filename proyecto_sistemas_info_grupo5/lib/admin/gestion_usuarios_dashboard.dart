@@ -5,13 +5,14 @@ class GestionUsuariosDashboard extends StatefulWidget {
   const GestionUsuariosDashboard({Key? key}) : super(key: key);
 
   @override
-  State<GestionUsuariosDashboard> createState() => _GestionUsuariosDashboardState();
+  State<GestionUsuariosDashboard> createState() =>
+      _GestionUsuariosDashboardState();
 }
 
 class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
   String _searchQuery = '';
   String _selectedRolFilter = 'Todos los roles';
-  
+
   // 1. CREAMOS UNA VARIABLE PARA EL STREAM
   late Stream<QuerySnapshot> _usuariosStream;
 
@@ -19,44 +20,33 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
   void initState() {
     super.initState();
     // 2. INICIALIZAMOS EL STREAM AQUÍ (Para que no se reinicie al escribir en el buscador)
-    _usuariosStream = FirebaseFirestore.instance.collection('usuarios').snapshots();
-  }
-
-  // --- FUNCIÓN PARA ACTUALIZAR ROLES ---
-  Future<void> _actualizarRol(String uid, String nuevoRol) async {
-    try {
-      await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({'rol': nuevoRol});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Rol actualizado a ${nuevoRol.toUpperCase()} exitosamente'),
-            backgroundColor: const Color(0xFF00B14F),
-          ),
-        );
-      }
-    } catch (e) {
-      _mostrarError('Error al actualizar rol: $e');
-    }
+    _usuariosStream =
+        FirebaseFirestore.instance.collection('usuarios').snapshots();
   }
 
   // --- CUADRO DE DIÁLOGO DE CONFIRMACIÓN ---
-  Future<bool?> _mostrarConfirmacion(String titulo, String mensaje, Color colorBoton) {
+  Future<bool?> _mostrarConfirmacion(
+      String titulo, String mensaje, Color colorBoton) {
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title:
+              Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
           content: Text(mensaje),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              child:
+                  const Text('Cancelar', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: colorBoton),
-              child: const Text('Estoy seguro', style: TextStyle(color: Colors.white)),
+              child: const Text('Estoy seguro',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -65,7 +55,8 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
   }
 
   // --- LÓGICA PARA SUSPENDER USUARIO ---
-  Future<void> _suspenderUsuario(String uid, String username, bool estaSuspendido) async {
+  Future<void> _suspenderUsuario(
+      String uid, String username, bool estaSuspendido) async {
     String accion = estaSuspendido ? 'Reactivar' : 'Suspender';
     bool? confirmar = await _mostrarConfirmacion(
       '$accion Usuario',
@@ -75,14 +66,17 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
 
     if (confirmar == true) {
       try {
-        await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
-          'activo': estaSuspendido ? true : false
-        });
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid)
+            .update({'activo': estaSuspendido ? true : false});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Usuario ${estaSuspendido ? 'reactivado' : 'suspendido'} exitosamente'),
-              backgroundColor: estaSuspendido ? const Color(0xFF00B14F) : Colors.orange,
+              content: Text(
+                  'Usuario ${estaSuspendido ? 'reactivado' : 'suspendido'} exitosamente'),
+              backgroundColor:
+                  estaSuspendido ? const Color(0xFF00B14F) : Colors.orange,
             ),
           );
         }
@@ -102,11 +96,15 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
 
     if (confirmar == true) {
       try {
-        await FirebaseFirestore.instance.collection('usuarios').doc(uid).delete();
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid)
+            .delete();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Usuario eliminado exitosamente de la base de datos'),
+              content:
+                  Text('Usuario eliminado exitosamente de la base de datos'),
               backgroundColor: Colors.red,
             ),
           );
@@ -127,22 +125,24 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // 3. USAMOS LA VARIABLE _usuariosStream EN LUGAR DE LLAMAR A FIREBASE DIRECTO
     return StreamBuilder<QuerySnapshot>(
-      stream: _usuariosStream, 
+      stream: _usuariosStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator(color: Color(0xFF00B14F))),
+            child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(color: Color(0xFF00B14F))),
           );
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No se encontraron usuarios en el sistema.'));
+          return const Center(
+              child: Text('No se encontraron usuarios en el sistema.'));
         }
 
         final allUsers = snapshot.data!.docs;
-        
+
         int viajerosCount = 0;
         int operadoresCount = 0;
 
@@ -160,15 +160,14 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
         // --- FILTRADO DINÁMICO (AQUÍ USAMOS "username" EXACTO) ---
         final filteredUsers = allUsers.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          
-          // Leemos el campo exacto de tu Firebase: 'username'
+
           final name = (data['username'] ?? '').toString().toLowerCase();
           final email = (data['email'] ?? doc.id).toString().toLowerCase();
           final rol = (data['rol'] ?? 'viajero').toString().toLowerCase();
 
-          final matchesSearch = name.contains(_searchQuery.toLowerCase()) || 
-                                email.contains(_searchQuery.toLowerCase());
-          
+          final matchesSearch = name.contains(_searchQuery.toLowerCase()) ||
+              email.contains(_searchQuery.toLowerCase());
+
           bool matchesFilter = true;
           if (_selectedRolFilter == 'Viajeros') {
             matchesFilter = (rol == 'viajero');
@@ -186,7 +185,10 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
             children: [
               const Text(
                 'Gestión de Usuarios',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -199,15 +201,31 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   double cardWidth = (constraints.maxWidth - 32) / 3;
-                  if (constraints.maxWidth < 600) cardWidth = constraints.maxWidth;
-                  
+                  if (constraints.maxWidth < 600)
+                    cardWidth = constraints.maxWidth;
+
                   return Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: [
-                      _buildMetricCard(title: 'Viajeros Registrados', value: '$viajerosCount', color: const Color(0xFF1A73E8), icon: Icons.people_alt, width: cardWidth),
-                      _buildMetricCard(title: 'Operadores Activos', value: '$operadoresCount', color: const Color(0xFFA142F4), icon: Icons.shield_outlined, width: cardWidth),
-                      _buildMetricCard(title: 'Total de Usuarios', value: '$totalUsuarios', color: const Color(0xFF00B14F), icon: Icons.group_add, width: cardWidth),
+                      _buildMetricCard(
+                          title: 'Viajeros Registrados',
+                          value: '$viajerosCount',
+                          color: const Color(0xFF1A73E8),
+                          icon: Icons.people_alt,
+                          width: cardWidth),
+                      _buildMetricCard(
+                          title: 'Operadores Activos',
+                          value: '$operadoresCount',
+                          color: const Color(0xFFA142F4),
+                          icon: Icons.shield_outlined,
+                          width: cardWidth),
+                      _buildMetricCard(
+                          title: 'Total de Usuarios',
+                          value: '$totalUsuarios',
+                          color: const Color(0xFF00B14F),
+                          icon: Icons.group_add,
+                          width: cardWidth),
                     ],
                   );
                 },
@@ -227,7 +245,6 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                       ),
                       child: TextField(
                         onChanged: (value) {
-                          // Actualizamos el estado al escribir
                           setState(() => _searchQuery = value);
                         },
                         decoration: const InputDecoration(
@@ -250,11 +267,14 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedRolFilter,
-                        items: ['Todos los roles', 'Viajeros', 'Operadores'].map((String value) {
-                          return DropdownMenuItem<String>(value: value, child: Text(value));
+                        items: ['Todos los roles', 'Viajeros', 'Operadores']
+                            .map((String value) {
+                          return DropdownMenuItem<String>(
+                              value: value, child: Text(value));
                         }).toList(),
                         onChanged: (newValue) {
-                          if (newValue != null) setState(() => _selectedRolFilter = newValue);
+                          if (newValue != null)
+                            setState(() => _selectedRolFilter = newValue);
                         },
                       ),
                     ),
@@ -269,30 +289,44 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ],
                 ),
                 child: Theme(
                   data: Theme.of(context).copyWith(cardColor: Colors.white),
                   child: DataTable(
                     // ACTUALIZACIÓN DE WIDGET PARA QUITAR LA ADVERTENCIA AZUL
-                    headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
+                    headingRowColor:
+                        WidgetStateProperty.all(Colors.grey.shade50),
                     columns: const [
-                      DataColumn(label: Text('Usuario', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Usuario',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Email',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Rol',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Acciones',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: filteredUsers.map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final String uid = doc.id;
-                      
+
                       // Leemos "username" para mostrarlo en la tabla
                       final String username = data['username'] ?? 'Sin nombre';
                       final String email = data['email'] ?? 'Sin correo';
-                      
-                      final bool isActivo = data['activo'] ?? true; 
-                      
-                      String rol = (data['rol'] ?? 'viajero').toString().toLowerCase();
+                      final bool isActivo = data['activo'] ?? true;
+
+                      String rol =
+                          (data['rol'] ?? 'viajero').toString().toLowerCase();
                       if (rol == 'administrador') rol = 'admin';
 
                       return DataRow(cells: [
@@ -301,39 +335,59 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                             children: [
                               CircleAvatar(
                                 // ACTUALIZACIÓN PARA QUITAR LA ADVERTENCIA AZUL
-                                backgroundColor: isActivo ? _getRolColor(rol).withValues(alpha: 0.2) : Colors.grey.shade300,
+                                backgroundColor: isActivo
+                                    ? _getRolColor(rol).withValues(alpha: 0.2)
+                                    : Colors.grey.shade300,
                                 child: Text(
-                                  username.isNotEmpty ? username[0].toUpperCase() : 'U',
-                                  style: TextStyle(color: isActivo ? _getRolColor(rol) : Colors.grey, fontWeight: FontWeight.bold),
+                                  username.isNotEmpty
+                                      ? username[0].toUpperCase()
+                                      : 'U',
+                                  style: TextStyle(
+                                      color: isActivo
+                                          ? _getRolColor(rol)
+                                          : Colors.grey,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                username, 
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  decoration: isActivo ? TextDecoration.none : TextDecoration.lineThrough,
-                                  color: isActivo ? Colors.black : Colors.grey
-                                )
-                              ),
+                              Text(username,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      decoration: isActivo
+                                          ? TextDecoration.none
+                                          : TextDecoration.lineThrough,
+                                      color: isActivo
+                                          ? Colors.black
+                                          : Colors.grey)),
                             ],
                           ),
                         ),
-                        DataCell(Text(email, style: TextStyle(color: isActivo ? Colors.black87 : Colors.grey))),
-                        DataCell(_buildDropdownRol(uid, rol, isActivo)),
+                        DataCell(Text(email,
+                            style: TextStyle(
+                                color:
+                                    isActivo ? Colors.black87 : Colors.grey))),
+                        DataCell(_buildEtiquetaRol(rol, isActivo)),
                         DataCell(
                           Row(
                             children: [
                               IconButton(
-                                icon: Icon(isActivo ? Icons.block : Icons.check_circle_outline, 
-                                           color: isActivo ? Colors.orange : Colors.green, size: 20),
+                                icon: Icon(
+                                    isActivo
+                                        ? Icons.block
+                                        : Icons.check_circle_outline,
+                                    color:
+                                        isActivo ? Colors.orange : Colors.green,
+                                    size: 20),
                                 tooltip: isActivo ? 'Suspender' : 'Reactivar',
-                                onPressed: () => _suspenderUsuario(uid, username, !isActivo),
+                                onPressed: () =>
+                                    _suspenderUsuario(uid, username, !isActivo),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.red, size: 20),
                                 tooltip: 'Eliminar permanentemente',
-                                onPressed: () => _eliminarUsuario(uid, username),
+                                onPressed: () =>
+                                    _eliminarUsuario(uid, username),
                               ),
                             ],
                           ),
@@ -351,62 +405,63 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
   }
 
   // --- WIDGETS AUXILIARES ---
-  Widget _buildMetricCard({required String title, required String value, required Color color, required IconData icon, required double width}) {
+  Widget _buildMetricCard(
+      {required String title,
+      required String value,
+      required Color color,
+      required IconData icon,
+      required double width}) {
     return Container(
       width: width,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+      decoration:
+          BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 4),
-              // ACTUALIZACIÓN PARA QUITAR LA ADVERTENCIA AZUL
-              Text(title, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500)),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500)),
             ],
           ),
-          // ACTUALIZACIÓN PARA QUITAR LA ADVERTENCIA AZUL
           Icon(icon, color: Colors.white.withValues(alpha: 0.3), size: 40),
         ],
       ),
     );
   }
 
-  Widget _buildDropdownRol(String uid, String rolActual, bool isActivo) {
+  // 🛠️ NUEVO WIDGET: Reemplaza la funcionalidad de DropdownButton por una etiqueta visual de lectura limpia
+  Widget _buildEtiquetaRol(String rolActual, bool isActivo) {
     Color baseColor = isActivo ? _getRolColor(rolActual) : Colors.grey;
-    String valorValido = ['admin', 'operador', 'viajero'].contains(rolActual) ? rolActual : 'viajero';
+    String textoRol = ['admin', 'operador', 'viajero'].contains(rolActual)
+        ? rolActual
+        : 'viajero';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        // ACTUALIZACIÓN PARA QUITAR LA ADVERTENCIA AZUL
         color: baseColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: baseColor.withValues(alpha: 0.3)),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: valorValido,
-          icon: Icon(Icons.arrow_drop_down, color: baseColor, size: 18),
-          dropdownColor: Colors.white,
-          style: TextStyle(color: baseColor, fontSize: 12, fontWeight: FontWeight.bold),
-          items: isActivo ? const [
-            DropdownMenuItem(value: 'admin', child: Text('ADMIN')),
-            DropdownMenuItem(value: 'operador', child: Text('OPERADOR')),
-            DropdownMenuItem(value: 'viajero', child: Text('VIAJERO')),
-          ] : [
-            DropdownMenuItem(value: valorValido, child: Text(valorValido.toUpperCase())),
-          ],
-          onChanged: isActivo ? (nuevoRol) {
-            if (nuevoRol != null && nuevoRol != rolActual) {
-              _actualizarRol(uid, nuevoRol);
-            }
-          } : null,
-        ),
+      child: Text(
+        textoRol.toUpperCase(),
+        style: TextStyle(
+            color: baseColor,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5),
       ),
     );
   }

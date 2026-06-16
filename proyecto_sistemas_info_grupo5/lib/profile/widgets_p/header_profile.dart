@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Importamos Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:proyecto_sistemas_info_grupo5/profile/editar_perfil.dart'; // Importamos Firestore
 
 class ProfileHeaderCard extends StatelessWidget {
   const ProfileHeaderCard({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // 1. 
     final User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
-      return const SizedBox.shrink(); // Si no hay sesión, no muestra nada
+      return const SizedBox.shrink();
     }
 
-    // 2. Buscamos los datos adicionales (username y rol) en Firestore
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
           .collection('usuarios')
           .doc(currentUser.uid)
-          .get(),
+          .snapshots(),
       builder: (context, snapshot) {
-        // Mientras consulta la base de datos, muestra un indicador de carga ligero
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
             height: 140,
@@ -35,75 +33,116 @@ class ProfileHeaderCard extends StatelessWidget {
           );
         }
 
-        // Valores por defecto por si el documento aún no existe en Firestore
         String userName = "Usuario";
-        String userRole = "traveler";
-        String userEmail = currentUser.email ?? "correo@ejemplo.com";
+        String userRole = "viajero";
+        String biografia = "¡Bienvenido a tu perfil de EcoRutas!";
+        String? photoUrl;
 
-        // Si el documento existe, extraemos los datos reales
-        if (snapshot.hasData && snapshot.data!.exists) {
-          var userData = snapshot.data!.data() as Map<String, dynamic>;
-          userName = userData['username'] ?? 'Usuario';
-          userRole = userData['rol'] ?? 'traveler';
+        if (snapshot.hasData &&
+            snapshot.data!.exists &&
+            snapshot.data!.data() != null) {
+          var data = snapshot.data!.data() as Map<String, dynamic>;
+          userName = data['username'] ?? "Usuario";
+          userRole = data['rol'] ?? "viajero";
+          biografia = data['biografia'] ?? "Sin biografía definida todavía.";
+          photoUrl = data['photoUrl'];
         }
 
-        // Extraemos la primera letra para el Avatar
-        final String initial = userName.isNotEmpty ? userName[0].toUpperCase() : "U";
+        String inicialNombre =
+            userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
         return Container(
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withOpacity(0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              ),
+              )
             ],
           ),
-          padding: const EdgeInsets.all(32.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // AVATAR DEL USUARIO
               CircleAvatar(
-                radius: 44,
-                backgroundColor: const Color(0xFF009933),
-                child: Text(
-                  initial,
-                  style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
-                ),
+                radius: 40,
+                backgroundColor: const Color(0xFF009933).withOpacity(0.1),
+                backgroundImage:
+                    photoUrl != null ? NetworkImage(photoUrl) : null,
+                child: photoUrl == null
+                    ? Text(
+                        inicialNombre,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF009933),
+                        ),
+                      )
+                    : null,
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
+
+              //Información del usuario
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                    Row(
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildRoleBadge(userRole),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
-                      userEmail,
-                      style: const TextStyle(fontSize: 16, color: Color(0xFF4B5563)),
+                      currentUser.email ?? '',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
                     ),
-                    const SizedBox(height: 8),
-                    // Pasamos el rol real de Firestore al Badge
-                    _buildRoleBadge(userRole),
+                    const SizedBox(height: 10),
+                    Text(
+                      biografia,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Lógica para editar perfil
+                  // Lógica para editar perfil <-- Gracias al que puso esto aqui :)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const EditarPerfilPage()),
+                  );
                 },
                 icon: const Icon(Icons.edit_note, size: 18),
-                label: const Text('Editar Perfil', style: TextStyle(fontWeight: FontWeight.w600)),
+                label: const Text('Editar Perfil',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF374151),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   backgroundColor: const Color(0xFFF9FAFB),
                 ),
               ),
@@ -145,8 +184,9 @@ class ProfileHeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
-            label,
-        style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
+        label,
+        style: TextStyle(
+            color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
       ),
     );
   }
