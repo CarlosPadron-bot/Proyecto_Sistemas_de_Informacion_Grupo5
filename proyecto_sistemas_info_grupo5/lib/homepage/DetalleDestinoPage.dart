@@ -102,19 +102,16 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
       }
 
       final data = jsonDecode(orderResponse.body);
-
-      // Guardamos la reserva en la base de datos al validar la orden con PayPal
       final user = FirebaseAuth.instance.currentUser;
 
-      // --- CORRECCIÓN AQUÍ: Adaptado completamente a tu nuevo modelo Reserva ---
       final nuevaReserva = Reserva(
-        id: '', // Se deja vacío para que Firestore genere el ID automático del documento
+        id: '',
         usuarioId: user?.uid ?? '',
-        destinoId: 'id_simulado_dest', // ID temporal asignado
+        destinoId: 'id_simulado_dest',
         destinoNombre: widget.title,
         precioTotal: totalAmount,
         fechaCompra: DateTime.now(),
-        urlImagen: widget.imageUrl, // <-- ¡FOTO RECUPERADA EXITOSAMENTE!
+        urlImagen: widget.imageUrl,
       );
 
       final ReservaService _reservaService = ReservaService();
@@ -197,7 +194,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     );
   }
 
- Widget _buildContenidoIzquierdo() {
+  Widget _buildContenidoIzquierdo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,7 +333,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
     );
   }
 
-  // --- NUEVA FUNCIÓN PARA PROCESAR LA IMAGEN ---
   Widget _buildImage(String rutaImagen) {
     if (rutaImagen.isEmpty) {
       return const Center(
@@ -351,21 +347,23 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           width: double.infinity,
           height: 420,
           errorBuilder: (context, error, stackTrace) => const Center(
-              child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
+              child: Icon(Icons.image_not_supported,
+                  size: 80, color: Colors.grey)),
         );
       } catch (e) {
         return const Center(
-            child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey));
+            child:
+                Icon(Icons.image_not_supported, size: 80, color: Colors.grey));
       }
     } else {
-      // Si no es Base64, asumimos que es un Link web normal
       return Image.network(
         rutaImagen,
         fit: BoxFit.cover,
         width: double.infinity,
         height: 420,
         errorBuilder: (context, error, stackTrace) => const Center(
-            child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
+            child:
+                Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
       );
     }
   }

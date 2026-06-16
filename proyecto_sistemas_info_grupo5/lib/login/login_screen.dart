@@ -5,7 +5,7 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/admin/admin_dashboard.dart';
 import 'package:proyecto_sistemas_info_grupo5/operador/operador_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart'; 
+import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,14 +18,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final Auth _authService = Auth();
+  String? _errorCredenciales;
 
   void _handleLogin() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
+    setState(() {
+      _errorCredenciales = null;
+    });
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, introduce tu correo y contraseña.')),
+        const SnackBar(
+            content: Text('Por favor, introduce tu correo y contraseña.')),
       );
       return;
     }
@@ -33,7 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!email.toLowerCase().endsWith('@correo.unimet.edu.ve')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Acceso denegado. Solo se permiten correos institucionales @correo.unimet.edu.ve'),
+          content: Text(
+              'Acceso denegado. Solo se permiten correos institucionales @correo.unimet.edu.ve'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -42,7 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 1. Intentar iniciar sesión en Firebase Auth
-      UserCredential? userCredential = await _authService.loginConEmail(email, password);
+      UserCredential? userCredential =
+          await _authService.loginConEmail(email, password);
 
       if (userCredential != null && userCredential.user != null) {
         String uid = userCredential.user!.uid;
@@ -72,12 +79,25 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al iniciar sesión: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        setState(() {
+          String errorStr = e.toString().toLowerCase();
+
+          // Detecta si hay algún error de inicio de sesión
+          if (errorStr.contains('invalid-credential') ||
+              errorStr.contains('wrong-password') ||
+              errorStr.contains('user-not-found') ||
+              errorStr.contains('invalid-email')) {
+            _errorCredenciales = 'Correo o Contraseña incorrecta';
+          } else {
+            // Esto por si es un error diferente
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al iniciar sesión: ${e.toString()}'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
       }
     }
   }
@@ -128,7 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context) => const HomePage()),
                         );
                       },
-                      icon: const Icon(Icons.home, color: Colors.white, size: 20),
+                      icon:
+                          const Icon(Icons.home, color: Colors.white, size: 20),
                       label: const Text('Inicio',
                           style: TextStyle(color: Colors.white)),
                     ),
@@ -137,7 +158,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const BuscarPage()), // Ajusta si el nombre de tu clase es distinto
+                              builder: (context) =>
+                                  const BuscarPage()), // Ajusta si el nombre de tu clase es distinto
                         );
                       },
                       icon: const Icon(Icons.search,
@@ -159,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // Contenido central 
+          // Contenido central
           Expanded(
             child: SingleChildScrollView(
               // El padding se mueve al Container hijo para que el ScrollView toque los bordes
@@ -175,7 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 15),
                     const Text(
                       'Iniciar Sesión',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const Text('Accede a tu cuenta de EcoRutas',
                         style: TextStyle(color: Colors.grey)),
@@ -206,6 +229,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               hintText: 'tu@correo.unimet.edu.ve',
+                              errorText: _errorCredenciales != null ? '' : null,
+                              errorStyle:
+                                  const TextStyle(height: 0, fontSize: 0),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(5)),
                               contentPadding:
@@ -222,10 +248,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscureText: true,
                             decoration: InputDecoration(
                               hintText: '**********',
+                              errorText:
+                                  _errorCredenciales, //Para mostrar el error de las credenciales
+                              errorStyle: const TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(5)),
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 12),
                             ),
                           ),
                           const SizedBox(height: 25),
@@ -240,12 +273,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             icon: const Icon(Icons.login, color: Colors.white),
                             label: const Text('Iniciar Sesión',
-                                style:
-                                    TextStyle(color: Colors.white, fontSize: 16)),
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 16)),
                           ),
-                          
+
                           const SizedBox(height: 25),
-                          
+
                           Center(
                             child: RichText(
                               text: TextSpan(
