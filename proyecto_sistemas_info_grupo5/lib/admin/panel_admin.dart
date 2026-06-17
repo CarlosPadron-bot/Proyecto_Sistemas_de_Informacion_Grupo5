@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
 import 'package:proyecto_sistemas_info_grupo5/admin/gestion_usuarios_dashboard.dart'; 
+import 'package:fl_chart/fl_chart.dart';
 
 class PanelAdmin extends StatefulWidget {
   const PanelAdmin({super.key});
@@ -107,76 +108,364 @@ class _PanelAdminState extends State<PanelAdmin> {
   }
 
   Widget _buildDashboardView() {
-    return Column(
+  return Container(
+    // Contenedor principal blanco con sombra que unifica el panel del Figma
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    padding: const EdgeInsets.all(24.0),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          children: [
-            _buildStatCard('Paquetes Activos', '5', Icons.inventory_2, const Color(0xFF10B981)),
-            _buildStatCard('Alojamientos', '6', Icons.home, const Color(0xFF3B82F6)),
-            _buildStatCard('Usuarios Activos', '6', Icons.person, const Color(0xFFA855F7)),
-            _buildStatCard('Ingresos Totales', '\$400', Icons.attach_money, const Color(0xFFEAB308)),
-            
-            InkWell(
-              onTap: () => setState(() => _selectedIndex = 1),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 480,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4F46E5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Icon(Icons.manage_accounts, color: Colors.white, size: 30),
-                        Text('6', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Text('Gestionar Usuarios', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 5),
-                    Text('Ver, asignar roles o suspender cuentas', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
+        // 1. FILA DE LAS 4 TARJETA SUPERIORES (KPIs)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            double espaciado = 16.0;
+            double anchoTarjeta = (constraints.maxWidth - (espaciado * 3)) / 4;
 
-            Container(
-              width: 480,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D9488),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildFigmaCard(
+                  title: 'Paquetes Activos',
+                  value: '5',
+                  icon: Icons.widgets_outlined,
+                  color: const Color(0xFF00B050), // Verde exacto Figma
+                  width: anchoTarjeta,
+                ),
+                _buildFigmaCard(
+                  title: 'Alojamientos',
+                  value: '6',
+                  icon: Icons.home_outlined,
+                  color: const Color(0xFF2B78E4), // Azul exacto Figma
+                  width: anchoTarjeta,
+                ),
+                _buildFigmaCard(
+                  title: 'Usuarios Activos',
+                  value: '6',
+                  icon: Icons.person_outline,
+                  color: const Color(0xFF9837F5), // Morado exacto Figma
+                  width: anchoTarjeta,
+                ),
+                _buildFigmaCard(
+                  title: 'Ingresos Totales',
+                  value: '\$400',
+                  icon: Icons.attach_money,
+                  color: const Color(0xFFDCA10D), // Oro/Amarillo exacto Figma
+                  width: anchoTarjeta,
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // 2. FILA DE TARJETAS DE ACCIÓN CENTRALES (50% de ancho cada una)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            double espaciado = 16.0;
+            double anchoTarjetaMedio = (constraints.maxWidth - espaciado) / 2;
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildFigmaActionCard(
+                  title: 'Gestionar Usuarios',
+                  subtitle: 'Ver, suspender o eliminar cuentas',
+                  value: '6',
+                  icon: Icons.people_alt_outlined,
+                  color: const Color(0xFF5351FB), // Azul violeta exacto Figma
+                  width: anchoTarjetaMedio,
+                ),
+                _buildFigmaActionCard(
+                  title: 'Transacciones del Mes',
+                  subtitle: 'Reservas pagadas en abril 2026',
+                  value: '2',
+                  icon: Icons.trending_up,
+                  color: const Color(0xFF00A699), // Turquesa exacto Figma
+                  width: anchoTarjetaMedio,
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+
+        // 3. SECCIÓN DE GRÁFICOS INFERIORES (Distribución en dos columnas)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            double espaciado = 20.0;
+            double anchoColumna = (constraints.maxWidth - espaciado) / 2;
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // COLUMNA IZQUIERDA: Rango de precios y Estado de Reservas
+                SizedBox(
+                  width: anchoColumna,
+                  child: Column(
                     children: [
-                      Icon(Icons.show_chart, color: Colors.white, size: 30),
-                      Text('2', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      _buildDestinosPrecioCard(),
+                      const SizedBox(height: 20),
+                      _buildEstadoReservasCard(),
                     ],
                   ),
-                  SizedBox(height: 20),
-                  Text('Transacciones del Mes', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  Text('Reservas pagadas en el mes actual', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
-              ),
+                ),
+                
+                // COLUMNA DERECHA: Distribución por Estado e Ingresos Mensuales
+                SizedBox(
+                  width: anchoColumna,
+                  child: Column(
+                    children: [
+                      _buildDistribucionEstadoCard(),
+                      const SizedBox(height: 20),
+                      _buildIngresosMensualesCard(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+// --- REPLICACIÓN: TARJETAS SUPERIORES PEQUEÑAS ---
+Widget _buildFigmaCard({required String title, required String value, required IconData icon, required Color color, required double width}) {
+  return Container(
+    width: width,
+    height: 95,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w400)),
+          ],
+        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
+}
+
+// --- REPLICACIÓN: TARJETAS MEDIAS DE ACCIÓN ---
+Widget _buildFigmaActionCard({required String title, required String subtitle, required String value, required IconData icon, required Color color, required double width}) {
+  return Container(
+    width: width,
+    height: 115,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 26),
+            const SizedBox(height: 12),
+            Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+          ],
+        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
+}
+
+// --- GRÁFICO 1: DESTINOS POR RANGO DE PRECIO (BARRAS) ---
+Widget _buildDestinosPrecioCard() {
+  return _buildBaseGraficoCard(
+    title: 'Destinos por Rango de Precio',
+    child: SizedBox(
+      height: 180,
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: 4,
+          barGroups: [
+            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 2, color: const Color(0xFF2B78E4), width: 22, borderRadius: BorderRadius.circular(2))]),
+            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 0, color: const Color(0xFF2B78E4), width: 22)]),
+            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 3, color: const Color(0xFF2B78E4), width: 22, borderRadius: BorderRadius.circular(2))]),
+            BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 0, color: const Color(0xFF2B78E4), width: 22)]),
+          ],
+          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1)),
+          borderData: FlBorderData(show: true, border: Border(bottom: BorderSide(color: Colors.grey.shade400), left: BorderSide(color: Colors.grey.shade400))),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, interval: 1, reservedSize: 22)),
+            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+              const labels = ['\$0-\$50', '\$51-\$100', '\$101-\$200', '\$201+'];
+              return Padding(padding: const EdgeInsets.only(top: 6), child: Text(labels[value.toInt()], style: const TextStyle(fontSize: 10, color: Colors.grey)));
+            })),
+            rightTitles: const AxisTitles(),
+            topTitles: const AxisTitles(),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// --- GRÁFICO 2: DISTRIBUCIÓN POR ESTADO (PIE CHART) ---
+Widget _buildDistribucionEstadoCard() {
+  return _buildBaseGraficoCard(
+    title: 'Distribución por Estado',
+    child: SizedBox(
+      height: 180,
+      child: PieChart(
+        PieChartData(
+          sectionsSpace: 2,
+          centerSpaceRadius: 0,
+          sections: [
+            PieChartSectionData(color: const Color(0xFF2B78E4), value: 25, title: 'Bolívar', radius: 70, titleStyle: const TextStyle(fontSize: 10, color: Color(0xFF2B78E4)), badgeWidget: const Text('Bolívar', style: TextStyle(fontSize: 9, color: Colors.blue))),
+            PieChartSectionData(color: const Color(0xFF00B050), value: 20, title: 'Dep. Federales', radius: 70, titleStyle: const TextStyle(fontSize: 10, color: Color(0xFF00B050))),
+            PieChartSectionData(color: const Color(0xFF9837F5), value: 15, title: 'Sucre', radius: 70, titleStyle: const TextStyle(fontSize: 10, color: Color(0xFF9837F5))),
+            PieChartSectionData(color: const Color(0xFFF14336), value: 20, title: 'Falcón', radius: 70, titleStyle: const TextStyle(fontSize: 10, color: Color(0xFFF14336))),
+            PieChartSectionData(color: const Color(0xFFF1A100), value: 20, title: 'Mérida', radius: 70, titleStyle: const TextStyle(fontSize: 10, color: Color(0xFFF1A100))),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// --- GRÁFICO 3: INGRESOS MENSUALES (LÍNEAS) ---
+Widget _buildIngresosMensualesCard() {
+  return _buildBaseGraficoCard(
+    title: 'Ingresos Mensuales',
+    child: SizedBox(
+      height: 180,
+      child: LineChart(
+        LineChartData(
+          minY: 0,
+          maxY: 1000,
+          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100)),
+          borderData: FlBorderData(show: true, border: Border(bottom: BorderSide(color: Colors.grey.shade400), left: BorderSide(color: Colors.grey.shade400))),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, interval: 250, reservedSize: 28)),
+            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+              const labels = ['Ene', 'Feb', 'Mar', 'Abr'];
+              if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                return Text(labels[value.toInt()], style: const TextStyle(fontSize: 11, color: Colors.grey));
+              }
+              return const Text('');
+            })),
+            rightTitles: const AxisTitles(),
+            topTitles: const AxisTitles(),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: const [FlSpot(0, 420), FlSpot(1, 700), FlSpot(2, 950), FlSpot(3, 400)],
+              isCurved: true,
+              color: const Color(0xFF00A699),
+              barWidth: 2,
+              dotData: const FlDotData(show: true),
             ),
           ],
         ),
+      ),
+    ),
+  );
+}
+
+// --- SECCIÓN 4: ESTADO DE RESERVAS ---
+Widget _buildEstadoReservasCard() {
+  return _buildBaseGraficoCard(
+    title: 'Estado de Reservas',
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildMiniStatusBox('Solicitadas', '0', const Color(0xFF2B78E4))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildMiniStatusBox('Aceptadas', '1', const Color(0xFFDCA10D))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildMiniStatusBox('Pagadas', '1', const Color(0xFF00B050))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildMiniStatusBox('Completadas', '1', const Color(0xFF9837F5))),
+          ],
+        ),
       ],
-    );
-  }
+    ),
+  );
+}
+
+Widget _buildMiniStatusBox(String label, String value, Color color) {
+  return Container(
+    height: 65,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+    ),
+    child: Row(
+      children: [
+        Container(width: 3, height: double.infinity, color: color),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildBaseGraficoCard({required String title, required Widget child}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        const SizedBox(height: 16),
+        child,
+      ],
+    ),
+  );
+}
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
