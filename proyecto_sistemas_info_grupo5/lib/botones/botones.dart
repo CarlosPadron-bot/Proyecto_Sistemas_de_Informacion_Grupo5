@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:proyecto_sistemas_info_grupo5/homepage/cargar_destino_page.dart';
+import 'package:proyecto_sistemas_info_grupo5/cargar_destino_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 

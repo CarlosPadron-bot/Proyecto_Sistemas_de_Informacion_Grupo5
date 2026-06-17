@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
-import 'package:proyecto_sistemas_info_grupo5/homepage/cargar_destino_page.dart';
+import 'package:proyecto_sistemas_info_grupo5/cargar_destino_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 
 class RegisterScreen extends StatefulWidget {
