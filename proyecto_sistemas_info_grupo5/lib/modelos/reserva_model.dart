@@ -45,8 +45,7 @@ class Reserva {
       fechaCompra: json['fechaCompra'] != null
           ? DateTime.parse(json['fechaCompra'])
           : DateTime.now(),
-      urlImagen: json['urlImagen'] ??
-          '', // <-- 6. Lee la imagen de Firebase sin caerse si viene vacía
+      urlImagen: json['urlImagen'] ?? '',
       completa: json['completa'] ?? false,
     );
   }

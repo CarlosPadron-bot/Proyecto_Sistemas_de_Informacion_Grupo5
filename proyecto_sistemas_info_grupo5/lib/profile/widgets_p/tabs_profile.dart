@@ -658,7 +658,6 @@ class _ProfileTabsState extends State<ProfileTabs> {
                   width: 110,
                   height: 110,
                   color: Colors.grey[100],
-                  // 🛠️ ACTUALIZADO: Soportando Base64 dinámicamente
                   child: _buildImagenDestino(reserva.urlImagen,
                       width: 110, height: 110)),
             ),

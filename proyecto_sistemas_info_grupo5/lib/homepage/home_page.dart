@@ -108,7 +108,6 @@ class _HomePageState extends State<HomePage> {
           if (dataOrden['status'] == 'COMPLETED') {
             final user = FirebaseAuth.instance.currentUser;
 
-            // 🛠️ ¡NUEVO PASO!: Buscamos la imagen real del destino en Firestore usando su nombre
             String imagenDelDestino = '';
             try {
               final destinoQuery = await FirebaseFirestore.instance
@@ -133,8 +132,7 @@ class _HomePageState extends State<HomePage> {
               destinoNombre: destinoNombre,
               precioTotal: double.tryParse(totalValue) ?? 0.0,
               fechaCompra: DateTime.now(),
-              urlImagen:
-                  imagenDelDestino, // ✨ Ahora sí se guardará la URL/Base64 original
+              urlImagen: imagenDelDestino,
             );
 
             // 5. Guardar en Firebase de una vez
@@ -337,11 +335,8 @@ class HorizontalCarousel extends StatelessWidget {
             final String categoria = destinoData['categoria'] ?? '';
 
             if (isAccommodation) {
-              // Para la sección de alojamientos, solo pasan los que digan 'Alojamientos'
               return categoria == 'Alojamientos';
             } else {
-              // Para los paquetes, pasa TODO lo que NO sea 'Alojamientos'
-              // (Esto incluye hilos que no tengan la propiedad 'categoria')
               return categoria != 'Alojamientos';
             }
           }).toList();
@@ -716,8 +711,6 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       automaticallyImplyLeading: false,
 
-      // Cambiamos el 'title' para que use un Row expandido.
-      // Esto empuja automáticamente las acciones a la derecha, calcando el comportamiento de la pantalla Buscar.
       title: SizedBox(
         width: double.infinity,
         child: Row(

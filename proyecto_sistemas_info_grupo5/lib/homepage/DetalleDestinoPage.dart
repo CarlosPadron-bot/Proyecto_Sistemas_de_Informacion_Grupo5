@@ -170,8 +170,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                 _cargandoPago = false;
               });
 
-              // 🛠️ CORRECCIÓN: Limpiamos los query strings manteniendo al usuario
-              // exactamente en la misma ruta actual de DetalleDestinoPage.
               final String rutaActualLimpia =
                   "${html.window.location.origin}/#${html.window.location.pathname}";
               html.window.history.pushState({}, '', rutaActualLimpia);
