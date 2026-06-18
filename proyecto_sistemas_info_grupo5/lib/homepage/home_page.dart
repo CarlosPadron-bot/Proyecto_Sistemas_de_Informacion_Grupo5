@@ -6,27 +6,211 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:proyecto_sistemas_info_grupo5/Servicios/reserva_service.dart';
+import 'package:proyecto_sistemas_info_grupo5/modelos/reserva_model.dart';
 import '../login/login_screen.dart';
 import '../buscar/buscar_page.dart';
 import '../profile/profile_screen.dart';
 import 'DetalleDestinoPage.dart';
 import 'dart:convert';
+import 'dart:html' as html;
 
 // ==========================================
 // MÓDULO: HOMEPAGE (CON SALUDO PERSONALIZADO)
 // ==========================================
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _procesandoPagoGlobal = false;
+  final ReservaService _reservaService = ReservaService();
+
+  static const String _clientId =
+      "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL";
+  static const String _secretKey =
+      "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp";
+
+  @override
+  void initState() {
+    super.initState();
+    // Apenas pise la aplicación, revisamos si viene con tokens de PayPal en la URL
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _verificarPagoDesdeRaiz();
+    });
+  }
+
+  Future<void> _verificarPagoDesdeRaiz() async {
+    final Uri uri = Uri.parse(html.window.location.href.replaceFirst('#/', ''));
+    final String? tokenOrden = uri.queryParameters['token'];
+    final String? payerId = uri.queryParameters['PayerID'];
+
+    if (tokenOrden != null && payerId != null && !_procesandoPagoGlobal) {
+      if (!mounted) return;
+      setState(() {
+        _procesandoPagoGlobal = true;
+      });
+
+      try {
+        // 1. Obtener token de acceso de PayPal
+        final authTokenResponse = await http.post(
+          Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
+          headers: {
+            'Authorization':
+                'Basic ${base64Encode(utf8.encode('$_clientId:$_secretKey'))}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {'grant_type': 'client_credentials'},
+        );
+
+        if (authTokenResponse.statusCode != 200) throw Exception("Error OAuth");
+        final String accessToken =
+            jsonDecode(authTokenResponse.body)['access_token'];
+
+        // 2. Consultar detalles en PayPal para saber qué destino se compró y su monto
+        final detailsResponse = await http.get(
+          Uri.parse(
+              'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+        );
+
+        if (detailsResponse.statusCode != 200)
+          throw Exception("Error Detalles");
+        final dataDetalles = jsonDecode(detailsResponse.body);
+
+        final String destinoNombre = dataDetalles['purchase_units'][0]
+                ['custom_id'] ??
+            'Destino Turístico';
+        final String totalValue =
+            dataDetalles['purchase_units'][0]['amount']['value'] ?? '0.0';
+
+        // 3. Capturar el cobro real de la orden
+        final captureResponse = await http.post(
+          Uri.parse(
+              'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden/capture'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+        );
+
+        final dataOrden = jsonDecode(captureResponse.body);
+
+        if (captureResponse.statusCode == 200 ||
+            captureResponse.statusCode == 201) {
+          if (dataOrden['status'] == 'COMPLETED') {
+            final user = FirebaseAuth.instance.currentUser;
+
+            // 🛠️ ¡NUEVO PASO!: Buscamos la imagen real del destino en Firestore usando su nombre
+            String imagenDelDestino = '';
+            try {
+              final destinoQuery = await FirebaseFirestore.instance
+                  .collection('destinos')
+                  .where('nombre', isEqualTo: destinoNombre)
+                  .limit(1)
+                  .get();
+
+              if (destinoQuery.docs.isNotEmpty) {
+                imagenDelDestino =
+                    destinoQuery.docs.first.data()['urlImagen'] ?? '';
+              }
+            } catch (e) {
+              print("No se pudo recuperar la imagen del destino: $e");
+            }
+
+            // 4. Instanciamos la nueva reserva asignándole la imagen real obtenida
+            final nuevaReserva = Reserva(
+              id: '',
+              usuarioId: user?.uid ?? 'anonimo',
+              destinoId: destinoNombre,
+              destinoNombre: destinoNombre,
+              precioTotal: double.tryParse(totalValue) ?? 0.0,
+              fechaCompra: DateTime.now(),
+              urlImagen:
+                  imagenDelDestino, // ✨ Ahora sí se guardará la URL/Base64 original
+            );
+
+            // 5. Guardar en Firebase de una vez
+            await _reservaService.registrarReserva(nuevaReserva);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('¡Pago Exitoso! Tu destino ya está guardado.'),
+                backgroundColor: Color(0xFF009933),
+              ),
+            );
+
+            if (mounted) {
+              setState(() {
+                _procesandoPagoGlobal = false;
+              });
+
+              // Limpiamos de raíz la barra de direcciones del navegador
+              final String rutaLimpia = "${html.window.location.origin}/#/";
+              html.window.history.replaceState({}, '', rutaLimpia);
+
+              // Redirigimos de inmediato a la pantalla del perfil para que vea sus reservas
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            }
+          }
+        }
+      } catch (e) {
+        // En caso de fallo limpiamos la barra para que no se tranque en bucle
+        final String rutaLimpia = "${html.window.location.origin}/#/";
+        html.window.history.replaceState({}, '', rutaLimpia);
+        if (mounted) {
+          setState(() {
+            _procesandoPagoGlobal = false;
+          });
+        }
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_procesandoPagoGlobal) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF2E7D32)),
+              SizedBox(height: 20),
+              Text(
+                'Confirmando tu transacción con PayPal...',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Por favor, espera un momento mientras creamos tu reserva.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     // Obtenemos el ID del usuario autenticado actualmente
     final String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // Fondo claro neutro
-      appBar:
-          const CustomHeader(), 
+      appBar: const CustomHeader(),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,9 +302,7 @@ class HorizontalCarousel extends StatelessWidget {
       height: 350,
       // 1. Quitamos el .where() de la consulta para traer TODOS los destinos
       child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('destinos') 
-            .snapshots(),
+        stream: FirebaseFirestore.instance.collection('destinos').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -137,8 +319,8 @@ class HorizontalCarousel extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text(
-                isAccommodation 
-                    ? 'No hay alojamientos disponibles aún.' 
+                isAccommodation
+                    ? 'No hay alojamientos disponibles aún.'
                     : 'No hay paquetes disponibles aún.',
                 style: const TextStyle(color: Colors.grey),
               ),
@@ -168,8 +350,8 @@ class HorizontalCarousel extends StatelessWidget {
           if (destinos.isEmpty) {
             return Center(
               child: Text(
-                isAccommodation 
-                    ? 'No hay alojamientos disponibles aún.' 
+                isAccommodation
+                    ? 'No hay alojamientos disponibles aún.'
                     : 'No hay paquetes disponibles aún.',
                 style: const TextStyle(color: Colors.grey),
               ),
@@ -181,20 +363,26 @@ class HorizontalCarousel extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: destinos.length,
             itemBuilder: (context, index) {
-              final destinoData = destinos[index].data() as Map<String, dynamic>;
+              final destinoData =
+                  destinos[index].data() as Map<String, dynamic>;
 
               final String titulo = destinoData['nombre'] ?? 'Sin título';
-              final String ubicacion = destinoData['ubicacion'] ?? 'Ubicación desconocida';
+              final String ubicacion =
+                  destinoData['ubicacion'] ?? 'Ubicación desconocida';
               final String infoExtra = destinoData['infoExtra'] ?? '';
               final String precio = destinoData['precio']?.toString() ?? '0';
-              final String urlImagen = destinoData['urlImagen'] ?? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
-              
-              final double calificacion = destinoData['calificacion']?.toDouble() ?? 5.0;
+              final String urlImagen = destinoData['urlImagen'] ??
+                  'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
+
+              final double calificacion =
+                  destinoData['calificacion']?.toDouble() ?? 5.0;
               final int resenas = destinoData['resenas'] ?? 0;
               final String tipoPrecio = isAccommodation ? '/noche' : '/persona';
 
-              final List<dynamic> incluyeDynamic = destinoData['queIncluye'] ?? [];
-              final List<String> incluye = incluyeDynamic.map((e) => e.toString()).toList();
+              final List<dynamic> incluyeDynamic =
+                  destinoData['queIncluye'] ?? [];
+              final List<String> incluye =
+                  incluyeDynamic.map((e) => e.toString()).toList();
 
               return Container(
                 width: 280,
@@ -213,8 +401,11 @@ class HorizontalCarousel extends StatelessWidget {
                           rating: calificacion.toString(),
                           reviewCount: resenas.toString(),
                           imageUrl: urlImagen,
-                          description: destinoData['descripcion'] ?? 'Disfruta de una experiencia única explorando $titulo.',
-                          includes: incluye.isEmpty ? const ['Traslados', 'Hospedaje', 'Guía local'] : incluye,
+                          description: destinoData['descripcion'] ??
+                              'Disfruta de una experiencia única explorando $titulo.',
+                          includes: incluye.isEmpty
+                              ? const ['Traslados', 'Hospedaje', 'Guía local']
+                              : incluye,
                         ),
                       ),
                     );
@@ -228,7 +419,7 @@ class HorizontalCarousel extends StatelessWidget {
                     calificacion: calificacion,
                     resenas: resenas,
                     categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
-                    rutaImagen: urlImagen, 
+                    rutaImagen: urlImagen,
                   ),
                 ),
               );
@@ -290,7 +481,8 @@ class ItemCard extends StatelessWidget {
               ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: _buildImage(), // Llama a la nueva función que creamos abajo
+                child:
+                    _buildImage(), // Llama a la nueva función que creamos abajo
               ),
               Positioned(
                 top: 8,
@@ -409,7 +601,7 @@ class ItemCard extends StatelessWidget {
       } catch (e) {
         return _errorPlaceholder();
       }
-    } 
+    }
     // 2. Si no es Base64, asumimos que es un Link de Internet (Network)
     else {
       return Image.network(
@@ -428,7 +620,8 @@ class ItemCard extends StatelessWidget {
       height: 125,
       width: double.infinity,
       color: Colors.grey[300],
-      child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
+      child:
+          const Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
     );
   }
 }
@@ -455,7 +648,7 @@ class SectionTitle extends StatelessWidget {
 class BannerPrincipal extends StatelessWidget {
   const BannerPrincipal({super.key});
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,

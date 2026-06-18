@@ -36,29 +36,171 @@ class DetalleDestinoPage extends StatefulWidget {
   State<DetalleDestinoPage> createState() => _DetalleDestinoPageState();
 }
 
-class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
+class _DetalleDestinoPageState extends State<DetalleDestinoPage>
+    with WidgetsBindingObserver {
   int _cantidadViajeros = 1;
   bool _cargandoPago = false;
+  final ReservaService _reservaService = ReservaService();
+
+  static const String _clientId =
+      "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL";
+  static const String _secretKey =
+      "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp";
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _verificarYRegistrarPago();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _verificarYRegistrarPago();
+    }
+  }
+
+  Future<void> _verificarYRegistrarPago() async {
+    final Uri uri = Uri.parse(html.window.location.href.replaceFirst('#/', ''));
+    final String? tokenOrden = uri.queryParameters['token'];
+    final String? payerId = uri.queryParameters['PayerID'];
+
+    if (tokenOrden != null && payerId != null && !_cargandoPago) {
+      if (!mounted) return;
+
+      try {
+        // 1. Obtener token de acceso de PayPal
+        final authTokenResponse = await http.post(
+          Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
+          headers: {
+            'Authorization':
+                'Basic ${base64Encode(utf8.encode('$_clientId:$_secretKey'))}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {'grant_type': 'client_credentials'},
+        );
+
+        if (authTokenResponse.statusCode != 200) return;
+        final String accessToken =
+            jsonDecode(authTokenResponse.body)['access_token'];
+
+        // 2. Consultar los detalles de la orden en PayPal ANTES de capturar
+        final detailsResponse = await http.get(
+          Uri.parse(
+              'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+        );
+
+        if (detailsResponse.statusCode != 200) return;
+        final dataDetalles = jsonDecode(detailsResponse.body);
+
+        // Extraemos el custom_id que guardamos al iniciar el pago
+        final String destinoIdEnOrden =
+            dataDetalles['purchase_units'][0]['custom_id'] ?? '';
+
+        // VALIDACIÓN CRUCIAL: Si el token de la URL NO es de este paquete actual,
+        // simplemente limpiamos la URL de la barra de navegación y cancelamos.
+        if (destinoIdEnOrden != widget.title) {
+          final String rutaLimpia =
+              "${html.window.location.origin}/#${html.window.location.pathname}";
+          html.window.history.pushState({}, '', rutaLimpia);
+          return;
+        }
+
+        // Si el destino coincide, procedemos a realizar la captura de forma legítima
+        setState(() {
+          _cargandoPago = true;
+        });
+
+        _mostrarSnackBar(
+            'Procesando y confirmando tu pago con PayPal...', Colors.blue);
+
+        // 3. Capturar el pago de la orden
+        final captureResponse = await http.post(
+          Uri.parse(
+              'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden/capture'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+        );
+
+        final dataOrden = jsonDecode(captureResponse.body);
+
+        if (captureResponse.statusCode == 200 ||
+            captureResponse.statusCode == 201) {
+          if (dataOrden['status'] == 'COMPLETED') {
+            final user = FirebaseAuth.instance.currentUser;
+            double precioIndividual = double.tryParse(widget.price) ?? 280.0;
+            double totalCalculado = precioIndividual * _cantidadViajeros;
+
+            final nuevaReserva = Reserva(
+              id: '',
+              usuarioId: user?.uid ?? 'anonimo',
+              destinoId: widget.title,
+              destinoNombre: widget.title,
+              precioTotal: totalCalculado,
+              fechaCompra: DateTime.now(),
+              urlImagen: widget.imageUrl,
+            );
+
+            // 4. Persistencia en Firebase exitosa
+            await _reservaService.registrarReserva(nuevaReserva);
+
+            _mostrarSnackBar(
+                '¡Pago Completado! Tu destino se ha guardado en tus reservas.',
+                const Color(0xFF009933));
+
+            await Future.delayed(const Duration(seconds: 1));
+
+            if (mounted) {
+              setState(() {
+                _cargandoPago = false;
+              });
+
+              // 🛠️ CORRECCIÓN: Limpiamos los query strings manteniendo al usuario
+              // exactamente en la misma ruta actual de DetalleDestinoPage.
+              final String rutaActualLimpia =
+                  "${html.window.location.origin}/#${html.window.location.pathname}";
+              html.window.history.pushState({}, '', rutaActualLimpia);
+            }
+          }
+        }
+      } catch (e) {
+        final String rutaLimpia =
+            "${html.window.location.origin}/#${html.window.location.pathname}";
+        html.window.history.pushState({}, '', rutaLimpia);
+        if (mounted) setState(() => _cargandoPago = false);
+      }
+    }
+  }
 
   Future<void> _iniciarPagoPayPal(double totalAmount) async {
     setState(() => _cargandoPago = true);
 
-    const String clientId =
-        "AQrCoKvqDCye6ty5CJIxAUDMujXmScsnoDgpesG6NTOSeHVfNwxYdLxsb1J9OvRV3YU40ubOxRLd_DjL";
-    const String secretKey =
-        "EGtlnnLGI5ckxe9Z5zz-cLfcZs_f-GZ6a5cu7wsFS-Ncxz4pRgNDSaANGNZWkH1Qp50z6-7Bvit1YfGp";
-
-    final String baseUrl = html.window.location.origin;
-    final String returnUrl = "$baseUrl/#/success";
-    final String cancelUrl = "$baseUrl/#/";
+    // Guardamos la URL exacta con hash para que regrese a la vista de detalle
+    final String currentUrl = html.window.location.href.split('?')[0];
+    final String returnUrl = currentUrl;
+    final String cancelUrl = "${html.window.location.origin}/#/";
 
     try {
-      // Obtener el Token de acceso de PayPal
       final authTokenResponse = await http.post(
         Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
         headers: {
           'Authorization':
-              'Basic ${base64Encode(utf8.encode('$clientId:$secretKey'))}',
+              'Basic ${base64Encode(utf8.encode('$_clientId:$_secretKey'))}',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {'grant_type': 'client_credentials'},
@@ -71,7 +213,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
       final String accessToken =
           jsonDecode(authTokenResponse.body)['access_token'];
 
-      // Crear la Orden de pago
       final orderResponse = await http.post(
         Uri.parse('https://api-m.sandbox.paypal.com/v2/checkout/orders'),
         headers: {
@@ -86,7 +227,8 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
                 "currency_code": "USD",
                 "value": totalAmount.toStringAsFixed(2)
               },
-              "description": "Compra de paquete turístico: ${widget.title}"
+              "description": "Compra de paquete turístico: ${widget.title}",
+              "custom_id": widget.title
             }
           ],
           "application_context": {
@@ -102,22 +244,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
       }
 
       final data = jsonDecode(orderResponse.body);
-      final user = FirebaseAuth.instance.currentUser;
 
-      final nuevaReserva = Reserva(
-        id: '',
-        usuarioId: user?.uid ?? '',
-        destinoId: 'id_simulado_dest',
-        destinoNombre: widget.title,
-        precioTotal: totalAmount,
-        fechaCompra: DateTime.now(),
-        urlImagen: widget.imageUrl,
-      );
-
-      final ReservaService _reservaService = ReservaService();
-      await _reservaService.registrarReserva(nuevaReserva);
-
-      // Buscar el link de aprobación enviado por PayPal
       String approveUrl = "";
       for (var link in data['links']) {
         if (link['rel'] == 'approve') {
@@ -126,20 +253,15 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
         }
       }
 
-      // Cambia la dirección de la pestaña actual en lugar de usar url_launcher
       if (approveUrl.isNotEmpty) {
         _mostrarSnackBar(
-            'Reserva guardada. Redirigiendo a PayPal...', Colors.blue);
-
+            'Redirigiendo a PayPal para completar el pago...', Colors.blue);
         await Future.delayed(const Duration(seconds: 1));
-
-        // Cambia la locación de la ventana nativa de la web
         html.window.location.href = approveUrl;
         return;
       }
     } catch (e) {
       _mostrarSnackBar('Ocurrió un error con PayPal: $e', Colors.redAccent);
-    } finally {
       setState(() => _cargandoPago = false);
     }
   }
@@ -207,7 +329,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage> {
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(12)),
-            // Aquí llamamos a la nueva función que detecta el tipo de imagen
             child: _buildImage(widget.imageUrl),
           ),
         ),

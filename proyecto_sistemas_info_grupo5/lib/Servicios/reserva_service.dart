@@ -19,12 +19,12 @@ class ReservaService {
     return _firestore
         .collection('reservas')
         .where('usuarioId', isEqualTo: usuarioId)
+        .where('completa', isEqualTo: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        // Combinamos los datos de Firebase con el ID del documento
         Map<String, dynamic> data = doc.data();
-        data['id'] = doc.id; 
+        data['id'] = doc.id;
         return Reserva.fromJson(data);
       }).toList();
     });
@@ -33,6 +33,31 @@ class ReservaService {
   // Función útil para que el Admin lea TODAS las reservas del sistema
   Stream<List<Reserva>> obtenerTodasLasReservas() {
     return _firestore.collection('reservas').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data();
+        data['id'] = doc.id;
+        return Reserva.fromJson(data);
+      }).toList();
+    });
+  }
+
+  Future<void> marcarReservaComoCompleta(String reservaId) async {
+    try {
+      await _firestore.collection('reservas').doc(reservaId).update({
+        'completa': true, // ⬅️ Marcamos que ya terminó y tiene reseña
+      });
+    } catch (e) {
+      throw Exception('Error al actualizar el estado de la reserva: $e');
+    }
+  }
+
+  Stream<List<Reserva>> obtenerHistorialPorUsuario(String usuarioId) {
+    return _firestore
+        .collection('reservas')
+        .where('usuarioId', isEqualTo: usuarioId)
+        .where('completa', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data();
         data['id'] = doc.id;

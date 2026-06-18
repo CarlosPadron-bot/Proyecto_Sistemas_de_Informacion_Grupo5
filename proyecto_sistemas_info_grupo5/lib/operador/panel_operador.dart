@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
 import 'package:proyecto_sistemas_info_grupo5/cargar_destino_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
+import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
+import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
 
 class PanelOperador extends StatefulWidget {
   const PanelOperador({super.key});
@@ -14,8 +16,9 @@ class PanelOperador extends StatefulWidget {
 
 class _PanelOperadorState extends State<PanelOperador> {
   int _selectedIndex = 0;
-  final DestinoService _destinoService =
-      DestinoService(); // Instancia del servicio
+  final DestinoService _destinoService = DestinoService();
+  final ResenaService _resenaService =
+      ResenaService(); // Instanciamos el servicio
 
   // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
   void _confirmarEliminacion(Destino destino) {
@@ -49,7 +52,6 @@ class _PanelOperadorState extends State<PanelOperador> {
               onPressed: () async {
                 Navigator.pop(context); // Cierra el popup
 
-                // 1. VALIDACIÓN SEGURA ANTI-CRASH
                 if (destino.id == null || destino.id!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -57,7 +59,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                             'Error: Este destino no tiene un ID válido asignado.'),
                         backgroundColor: Colors.red),
                   );
-                  return; // Detenemos la ejecución aquí
+                  return;
                 }
 
                 try {
@@ -138,7 +140,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                     const SizedBox(width: 20),
                     _buildTabItem('Alojamientos', Icons.home_work_outlined, 2),
                     const SizedBox(width: 20),
-                    _buildTabItem('Reseñas', Icons.people_outline, 3),
+                    _buildTabItem('Reseñas', Icons.rate_review_outlined, 3),
                   ],
                 ),
               ),
@@ -150,7 +152,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                 _buildTabServiciosDinamico('Paquetes Turisticos'),
               if (_selectedIndex == 2)
                 _buildTabServiciosDinamico('Alojamientos'),
-              if (_selectedIndex == 3) _buildTabReservas(),
+              if (_selectedIndex == 3) _buildTabResenasDinamicas(),
             ],
           ),
         ),
@@ -329,7 +331,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                   MaterialPageRoute(
                       builder: (context) =>
                           CargarDestinoPage(categoriaInicial: categoria)),
-                ).then((_) => setState(() {})); // Refrescar al volver
+                ).then((_) => setState(() {}));
               },
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
@@ -406,11 +408,11 @@ class _PanelOperadorState extends State<PanelOperador> {
       return const Icon(Icons.image, color: Colors.grey, size: 24);
     }
 
-    if (url.startsWith('base64,')) {
+    if (url.contains('base64')) {
       try {
-        final String cadenaLimpia = url.replaceFirst('base64,', '');
+        final String cadenaLimpia = url.contains(',') ? url.split(',')[1] : url;
         return Image.memory(
-          base64Decode(cadenaLimpia),
+          base64Decode(cadenaLimpia.trim()),
           fit: BoxFit.cover,
         );
       } catch (e) {
@@ -462,51 +464,155 @@ class _PanelOperadorState extends State<PanelOperador> {
     ]);
   }
 
-  Widget _buildTabReservas() {
+  Widget _buildTabResenasDinamicas() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Gestión de Reservas',
+        const Text('Reseñas e Historial de Clientes',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
-        _buildReservaCard('Aventura Los Roques', 'Paquete • res1',
-            'Check-in: 2026-05-15', '\$280', 'Pagado', Colors.green),
-        _buildReservaCard('Cabaña Montaña', 'Alojamiento • res2',
-            'Check-in: 2026-06-01', '\$105', 'Aceptado', Colors.orange),
+        StreamBuilder<List<Resena>>(
+          stream: _resenaService.obtenerTodasLasResenas(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: Color(0xFF009933)),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text('Error al cargar reseñas: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red)),
+                ),
+              );
+            }
+
+            final listaResenas = snapshot.data ?? [];
+
+            if (listaResenas.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: Text(
+                    'Tu plataforma aún no cuenta con comentarios de clientes.',
+                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: listaResenas.length,
+              itemBuilder: (context, index) {
+                final resena = listaResenas[index];
+                return _buildCardResenaOperador(resena);
+              },
+            );
+          },
+        ),
       ],
+    );
+  }
+
+  Widget _buildCardResenaOperador(Resena resena) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.grey.shade200)),
+      margin: const EdgeInsets.only(bottom: 15),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Imagen del Destino (Soporta Base64 y URL de Red)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 75,
+                height: 75,
+                color: Colors.grey[100],
+                child: _construirImagenDestino(resena.urlImagenDestino),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // 2. Información central de la reseña
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    resena.destinoNombre,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Por: ${resena.usuarioNombre}',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // 4. El comentario real del cliente
+                  Text(
+                    resena.comentario,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // 3. Calificación en estrellas en el lado derecho
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  children: List.generate(5, (starIndex) {
+                    return Icon(
+                      starIndex < resena.calificacion
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: const Color(0xFFFFCC00),
+                      size: 20,
+                    );
+                  }),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${resena.fechaResena.day}/${resena.fechaResena.month}/${resena.fechaResena.year}',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildReservaCard(
       String tit, String sub, String det, String pre, String est, Color col) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: Colors.grey.shade200)),
-      margin: const EdgeInsets.only(bottom: 15),
-      child: ListTile(
-        leading: Container(
-            width: 50,
-            height: 50,
-            color: Colors.grey[300],
-            child: const Icon(Icons.image)),
-        title: Text(tit, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('$sub\n$det'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(pre,
-                style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16)),
-            Text(est,
-                style: TextStyle(color: col, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }

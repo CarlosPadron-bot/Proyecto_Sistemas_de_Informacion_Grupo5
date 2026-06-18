@@ -1,4 +1,3 @@
-
 class Reserva {
   final String id;
   final String usuarioId;
@@ -7,6 +6,7 @@ class Reserva {
   final double precioTotal;
   final DateTime fechaCompra;
   final String urlImagen; // <-- 1. Agregamos la propiedad aquí
+  final bool completa;
 
   Reserva({
     required this.id,
@@ -16,6 +16,7 @@ class Reserva {
     required this.precioTotal,
     required this.fechaCompra,
     required this.urlImagen, // <-- 2. La requerimos en el constructor
+    this.completa = false,
   });
 
   // 3. Mapeo para enviar los datos de forma limpia a Firebase Firestore
@@ -26,8 +27,10 @@ class Reserva {
       'destinoId': destinoId,
       'destinoNombre': destinoNombre,
       'precioTotal': precioTotal,
-      'fechaCompra': fechaCompra.toIso8601String().substring(0, 10), // Guarda "AAAA-MM-DD"
+      'fechaCompra':
+          fechaCompra.toIso8601String().substring(0, 10), // Guarda "AAAA-MM-DD"
       'urlImagen': urlImagen, // <-- 4. Se incluye en el mapa de Firebase
+      'completa': completa,
     };
   }
 
@@ -39,10 +42,12 @@ class Reserva {
       destinoId: json['destinoId'] ?? '',
       destinoNombre: json['destinoNombre'] ?? '',
       precioTotal: (json['precioTotal'] ?? json['precio'] ?? 0.0).toDouble(),
-      fechaCompra: json['fechaCompra'] != null 
-          ? DateTime.parse(json['fechaCompra']) 
+      fechaCompra: json['fechaCompra'] != null
+          ? DateTime.parse(json['fechaCompra'])
           : DateTime.now(),
-      urlImagen: json['urlImagen'] ?? '', // <-- 6. Lee la imagen de Firebase sin caerse si viene vacía
+      urlImagen: json['urlImagen'] ??
+          '', // <-- 6. Lee la imagen de Firebase sin caerse si viene vacía
+      completa: json['completa'] ?? false,
     );
   }
 }
