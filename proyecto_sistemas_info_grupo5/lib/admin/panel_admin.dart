@@ -109,7 +109,6 @@ class _PanelAdminState extends State<PanelAdmin> {
 
   Widget _buildDashboardView() {
   return Container(
-    // Contenedor principal blanco con sombra que unifica el panel del Figma
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
