@@ -369,9 +369,6 @@ class HorizontalCarousel extends StatelessWidget {
               final String urlImagen = destinoData['urlImagen'] ??
                   'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
 
-              final double calificacion =
-                  destinoData['calificacion']?.toDouble() ?? 5.0;
-              final int resenas = destinoData['resenas'] ?? 0;
               final String tipoPrecio = isAccommodation ? '/noche' : '/persona';
 
               final List<dynamic> incluyeDynamic =
@@ -379,49 +376,116 @@ class HorizontalCarousel extends StatelessWidget {
               final List<String> incluye =
                   incluyeDynamic.map((e) => e.toString()).toList();
 
+              // Se retorna el calculador dinámico de reseñas que a su vez renderiza e inyecta los datos al ItemCard
               return Container(
                 width: 280,
                 margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetalleDestinoPage(
-                          title: titulo,
-                          location: ubicacion,
-                          price: precio,
-                          priceSuffix: tipoPrecio,
-                          rating: calificacion.toString(),
-                          reviewCount: resenas.toString(),
-                          imageUrl: urlImagen,
-                          description: destinoData['descripcion'] ??
-                              'Disfruta de una experiencia única explorando $titulo.',
-                          includes: incluye.isEmpty
-                              ? const ['Traslados', 'Hospedaje', 'Guía local']
-                              : incluye,
-                        ),
-                      ),
-                    );
-                  },
-                  child: ItemCard(
-                    titulo: titulo,
-                    ubicacion: ubicacion,
-                    infoExtra: infoExtra,
-                    precio: precio,
-                    tipoPrecio: tipoPrecio,
-                    calificacion: calificacion,
-                    resenas: resenas,
-                    categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
-                    rutaImagen: urlImagen,
-                  ),
+                child: ItemCardConResenas(
+                  titulo: titulo,
+                  ubicacion: ubicacion,
+                  infoExtra: infoExtra,
+                  precio: precio,
+                  tipoPrecio: tipoPrecio,
+                  categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
+                  rutaImagen: urlImagen,
+                  destinoData: destinoData,
+                  incluye: incluye,
                 ),
               );
             },
           );
         },
       ),
+    );
+  }
+}
+
+// ==========================================
+// WIDGET INTERMEDIO: CALCULA LAS RESEÑAS EN TIEMPO REAL
+// ==========================================
+class ItemCardConResenas extends StatelessWidget {
+  final String titulo;
+  final String ubicacion;
+  final String infoExtra;
+  final String precio;
+  final String tipoPrecio;
+  final String categoria;
+  final String rutaImagen;
+  final Map<String, dynamic> destinoData;
+  final List<String> incluye;
+
+  const ItemCardConResenas({
+    super.key,
+    required this.titulo,
+    required this.ubicacion,
+    required this.infoExtra,
+    required this.precio,
+    required this.tipoPrecio,
+    required this.categoria,
+    required this.rutaImagen,
+    required this.destinoData,
+    required this.incluye,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('resenas')
+          .where('destinoId', isEqualTo: titulo)
+          .snapshots(),
+      builder: (context, snapshot) {
+        double promedioRating = 0.0;
+        int cantidadResenas = 0;
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final resenasDocumentos = snapshot.data!.docs;
+          cantidadResenas = resenasDocumentos.length;
+
+          double sumaCalificaciones = 0;
+          for (var doc in resenasDocumentos) {
+            var data = doc.data() as Map<String, dynamic>;
+            sumaCalificaciones += (data['calificacion'] ?? 0).toDouble();
+          }
+          promedioRating = sumaCalificaciones / cantidadResenas;
+        }
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetalleDestinoPage(
+                  title: titulo,
+                  location: ubicacion,
+                  price: precio,
+                  priceSuffix: tipoPrecio,
+                  rating: promedioRating.toString(),
+                  reviewCount: cantidadResenas.toString(),
+                  imageUrl: rutaImagen,
+                  description: destinoData['descripcion'] ??
+                      'Disfruta de una experiencia única explorando $titulo.',
+                  includes: incluye.isEmpty
+                      ? const ['Traslados', 'Hospedaje', 'Guía local']
+                      : incluye,
+                ),
+              ),
+            );
+          },
+          child: ItemCard(
+            titulo: titulo,
+            ubicacion: ubicacion,
+            infoExtra: infoExtra,
+            precio: precio,
+            tipoPrecio: tipoPrecio,
+            calificacion: promedioRating,
+            resenas: cantidadResenas,
+            categoria: categoria,
+            rutaImagen: rutaImagen,
+          ),
+        );
+      },
     );
   }
 }
@@ -559,7 +623,7 @@ class ItemCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.star, size: 14, color: Colors.amber),
                           Text(
-                            ' $calificacion ($resenas)',
+                            ' ${resenas == 0 ? '0.0' : calificacion.toStringAsFixed(1)} ($resenas)',
                             style: const TextStyle(
                                 fontSize: 12, fontWeight: FontWeight.w500),
                           ),
@@ -743,11 +807,8 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                      (Route<dynamic> route) => false,
-                    );
+                    html.window.location.href =
+                        "${html.window.location.origin}/#/";
                   },
                   child: const Row(
                     children: [

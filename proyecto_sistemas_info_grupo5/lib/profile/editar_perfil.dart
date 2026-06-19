@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class EditarPerfilPage extends StatefulWidget {
@@ -69,7 +69,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   Future<void> _seleccionarImagen() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
 
     if (image != null) {
       if (kIsWeb) {
@@ -92,15 +92,9 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       try {
         String? finalPhotoUrl = _currentPhotoUrl;
 
-        if (kIsWeb && _webImageBytes != null && _pickedFile != null) {
-          final storageRef = FirebaseStorage.instance
-              .ref()
-              .child('perfiles')
-              .child('${user.uid}.jpg');
-
-          final metadata = SettableMetadata(contentType: 'image/jpeg');
-          await storageRef.putData(_webImageBytes!, metadata);
-          finalPhotoUrl = await storageRef.getDownloadURL();
+        if (kIsWeb && _webImageBytes != null) {
+          final String base64String = base64Encode(_webImageBytes!);
+          finalPhotoUrl = 'base64,$base64String';
         }
 
         await _firestore.collection('usuarios').doc(user.uid).update({
@@ -128,9 +122,14 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 backgroundColor: Colors.redAccent),
           );
         }
+      } finally {
+        if (mounted) {
+          setState(() => _guardando = false);
+        }
       }
+    } else {
+      setState(() => _guardando = false);
     }
-    setState(() => _guardando = false);
   }
 
   @override
@@ -142,10 +141,29 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     super.dispose();
   }
 
+  ImageProvider? _obtenerImagenPerfil() {
+    if (_webImageBytes != null) {
+      return MemoryImage(_webImageBytes!);
+    }
+
+    if (_currentPhotoUrl != null && _currentPhotoUrl!.isNotEmpty) {
+      if (_currentPhotoUrl!.startsWith('base64,')) {
+        try {
+          final String cadenaLimpia =
+              _currentPhotoUrl!.replaceFirst('base64,', '');
+          return MemoryImage(base64Decode(cadenaLimpia));
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return NetworkImage(_currentPhotoUrl!);
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user = _auth.currentUser;
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -194,25 +212,17 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                           style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                         const Divider(height: 40, thickness: 1.2),
-
-                        // ────────────── 🛠️ NUEVA CABECERA ESTILO PRIMERA IMAGEN ──────────────
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // 📸 FOTO DE PERFIL A LA IZQUIERDA CON BOTÓN DE CÁMARA
                             Stack(
                               alignment: Alignment.bottomRight,
                               children: [
                                 CircleAvatar(
-                                  radius:
-                                      45, // Ajustado para mantener proporción con el texto lateral
+                                  radius: 45,
                                   backgroundColor:
                                       const Color(0xFF009933).withOpacity(0.1),
-                                  backgroundImage: _webImageBytes != null
-                                      ? MemoryImage(_webImageBytes!)
-                                      : (_currentPhotoUrl != null
-                                          ? NetworkImage(_currentPhotoUrl!)
-                                          : null) as ImageProvider?,
+                                  backgroundImage: _obtenerImagenPerfil(),
                                   child: _webImageBytes == null &&
                                           _currentPhotoUrl == null
                                       ? Text(
@@ -241,8 +251,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                               ],
                             ),
                             const SizedBox(width: 24),
-
-                            // 📝 INFORMACIÓN LATERAL EN CASCADA VERTICAL
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,12 +267,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    user?.email ?? '',
+                                    _auth.currentUser?.email ?? '',
                                     style: TextStyle(
                                         color: Colors.grey[500], fontSize: 13),
                                   ),
                                   const SizedBox(height: 10),
-                                  // Badge de Rol dinámico idéntico a la primera imagen
                                   _buildRoleBadge(_userRole),
                                 ],
                               ),
@@ -272,8 +279,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                           ],
                         ),
                         const SizedBox(height: 40),
-
-                        // FILA 1: NOMBRE DE USUARIO Y EMAIL
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -285,11 +290,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                                   TextFormField(
                                     controller: _usernameController,
                                     onChanged: (value) {
-                                      // Actualiza la inicial y el nombre superior en tiempo real
                                       setState(() {
-                                        if (value.isNotEmpty)
+                                        if (value.isNotEmpty) {
                                           _inicialNombre =
                                               value[0].toUpperCase();
+                                        }
                                       });
                                     },
                                     decoration: _buildInputDecoration(
@@ -309,7 +314,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                                 children: [
                                   _buildLabel('Correo Institucional'),
                                   TextFormField(
-                                    initialValue: user?.email,
+                                    initialValue: _auth.currentUser?.email,
                                     enabled: false,
                                     style: const TextStyle(color: Colors.grey),
                                     decoration:
@@ -326,8 +331,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                           ],
                         ),
                         const SizedBox(height: 24),
-
-                        // FILA 2: TELÉFONO Y DIRECCIÓN
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -340,15 +343,20 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                                     controller: _telefonoController,
                                     keyboardType: TextInputType.number,
                                     inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(11),
                                     ],
                                     decoration: _buildInputDecoration(
                                         'Ej. 04121112233'),
-                                    validator: (value) => value != null &&
-                                            value.isNotEmpty &&
-                                            value.length < 10
-                                        ? 'Número de teléfono inválido'
-                                        : null,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return null;
+                                      }
+                                      if (value.length != 11) {
+                                        return 'El número debe tener exactamente 11 dígitos';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ],
                               ),
@@ -370,8 +378,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                           ],
                         ),
                         const SizedBox(height: 24),
-
-                        // FILA 3: BIOGRAFÍA
                         _buildLabel('Biografía / Presentación Personal'),
                         TextFormField(
                           controller: _biografiaController,
@@ -381,8 +387,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                               'Escribe una breve descripción para que la comunidad te conozca...'),
                         ),
                         const SizedBox(height: 40),
-
-                        // BOTONES DE ACCIÓN ROBUSTOS
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -442,7 +446,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     );
   }
 
-  // Widget auxiliar para pintar los Badges institucionales idéntico a header_profile.dart
   Widget _buildRoleBadge(String role) {
     Color bgColor;
     Color textColor;

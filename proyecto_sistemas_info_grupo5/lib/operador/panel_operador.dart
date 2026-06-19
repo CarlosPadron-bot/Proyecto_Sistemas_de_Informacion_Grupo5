@@ -6,6 +6,7 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PanelOperador extends StatefulWidget {
   const PanelOperador({super.key});
@@ -226,25 +227,41 @@ class _PanelOperadorState extends State<PanelOperador> {
                     const SizedBox(height: 15),
                     Row(
                       children: [
+                        // StreamBuilder en tiempo real para contar documentos en la colección de reservas
                         Expanded(
-                            child: _buildReservaStat(
-                                '0', 'Solicitadas', Colors.blue)),
+                          child: StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('reservas')
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              String totalReservas = '0';
+                              if (snapshot.hasData) {
+                                totalReservas =
+                                    snapshot.data!.docs.length.toString();
+                              }
+                              return _buildReservaStat(
+                                  totalReservas, 'Pagadas', Colors.green);
+                            },
+                          ),
+                        ),
                         const SizedBox(width: 10),
+                        // StreamBuilder en tiempo real para contar documentos en la colección de reseñas (completadas)
                         Expanded(
-                            child: _buildReservaStat(
-                                '1', 'Aceptadas', Colors.orange)),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: _buildReservaStat(
-                                '1', 'Pagadas', Colors.green)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: _buildReservaStat(
-                                '1', 'Completadas', Colors.purple)),
+                          child: StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('resenas')
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              String totalCompletadas = '0';
+                              if (snapshot.hasData) {
+                                totalCompletadas =
+                                    snapshot.data!.docs.length.toString();
+                              }
+                              return _buildReservaStat(totalCompletadas,
+                                  'Completadas', Colors.purple);
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ],

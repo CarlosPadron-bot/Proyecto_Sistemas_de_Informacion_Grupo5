@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:html' as html;
 import '../Servicios/reserva_service.dart';
 import '../modelos/reserva_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
@@ -50,10 +51,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _verificarYRegistrarPago();
-    });
   }
 
   @override
@@ -110,8 +107,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         final String destinoIdEnOrden =
             dataDetalles['purchase_units'][0]['custom_id'] ?? '';
 
-        // VALIDACIÓN CRUCIAL: Si el token de la URL NO es de este paquete actual,
-        // simplemente limpiamos la URL de la barra de navegación y cancelamos.
         if (destinoIdEnOrden != widget.title) {
           final String rutaLimpia =
               "${html.window.location.origin}/#${html.window.location.pathname}";
@@ -276,45 +271,76 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     double total = precioIndividual * _cantidadViajeros;
     bool esPantallaAncha = MediaQuery.of(context).size.width > 900;
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: const CustomHeader(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 32.0),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (esPantallaAncha)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 2, child: _buildContenidoIzquierdo()),
-                      const SizedBox(width: 40),
-                      Expanded(
-                          flex: 1,
-                          child: _buildCajaReserva(precioIndividual, total)),
-                    ],
-                  )
-                else
-                  Column(
-                    children: [
-                      _buildContenidoIzquierdo(),
-                      const SizedBox(height: 24),
-                      _buildCajaReserva(precioIndividual, total),
-                    ],
-                  ),
-              ],
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('resenas')
+          .where('destinoId', isEqualTo: widget.title)
+          .snapshots(),
+      builder: (context, snapshot) {
+        double promedioRating = 0.0;
+        int cantidadResenas = 0;
+        List<QueryDocumentSnapshot> resenasDocumentos = [];
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          resenasDocumentos = snapshot.data!.docs;
+          cantidadResenas = resenasDocumentos.length;
+
+          double sumaCalificaciones = 0;
+          for (var doc in resenasDocumentos) {
+            var data = doc.data() as Map<String, dynamic>;
+            sumaCalificaciones += (data['calificacion'] ?? 0).toDouble();
+          }
+          promedioRating = sumaCalificaciones / cantidadResenas;
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: const CustomHeader(),
+          body: SingleChildScrollView(
+            padding:
+                const EdgeInsets.symmetric(vertical: 24.0, horizontal: 32.0),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (esPantallaAncha)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              flex: 2,
+                              child: _buildContenidoIzquierdo(promedioRating,
+                                  cantidadResenas, resenasDocumentos)),
+                          const SizedBox(width: 40),
+                          Expanded(
+                              flex: 1,
+                              child:
+                                  _buildCajaReserva(precioIndividual, total)),
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          _buildContenidoIzquierdo(promedioRating,
+                              cantidadResenas, resenasDocumentos),
+                          const SizedBox(height: 24),
+                          _buildCajaReserva(precioIndividual, total),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildContenidoIzquierdo() {
+  Widget _buildContenidoIzquierdo(double rating, int totalResenas,
+      List<QueryDocumentSnapshot> docsResenas) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -362,10 +388,10 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
           children: [
             const Icon(Icons.star, color: Colors.amber, size: 18),
             const SizedBox(width: 4),
-            Text(widget.rating,
+            Text(totalResenas == 0 ? '0.0' : rating.toStringAsFixed(1),
                 style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            Text(' (${widget.reviewCount} reseñas)',
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            Text(' ($totalResenas reseñas)',
                 style: const TextStyle(color: Colors.grey, fontSize: 14)),
             const SizedBox(width: 15),
             const Icon(Icons.check, color: Color(0xFF009933), size: 16),
@@ -374,7 +400,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                 style: TextStyle(
                     color: Color(0xFF009933),
                     fontWeight: FontWeight.bold,
-                    fontSize: 14)),
+                    fontSize: 16)),
           ],
         ),
         const SizedBox(height: 30),
@@ -399,9 +425,15 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                 children: [
                   const Icon(Icons.check, color: Color(0xFF009933), size: 18),
                   const SizedBox(width: 8),
-                  Text(item,
+                  Expanded(
+                    child: Text(
+                      item,
                       style:
-                          const TextStyle(fontSize: 15, color: Colors.black87)),
+                          const TextStyle(fontSize: 15, color: Colors.black87),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               );
             }).toList(),
@@ -439,14 +471,88 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         ),
         const SizedBox(height: 20),
         _buildCuadroInformativo(
-          titulo: 'Reseñas (0)',
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10.0),
-            child: Text(
-              'Aún no hay reseñas para este paquete turístico.',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-            ),
-          ),
+          titulo: 'Reseñas ($totalResenas)',
+          child: docsResenas.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10.0),
+                  child: Text(
+                    'Aún no hay reseñas para este paquete turístico.',
+                    style: TextStyle(
+                        color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: docsResenas.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 30),
+                  itemBuilder: (context, index) {
+                    var data =
+                        docsResenas[index].data() as Map<String, dynamic>;
+                    String usuarioNombre =
+                        data['usuarioNombre'] ?? 'Viajero EcoRutas';
+                    String comentario = data['comentario'] ?? '';
+                    int calificacionEstrellas = data['calificacion'] ?? 0;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor:
+                                      const Color(0xFF009933).withOpacity(0.1),
+                                  child: Text(
+                                    usuarioNombre.isNotEmpty
+                                        ? usuarioNombre[0].toUpperCase()
+                                        : 'V',
+                                    style: const TextStyle(
+                                        color: Color(0xFF009933),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  usuarioNombre,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 21,
+                                      color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: List.generate(5, (starIndex) {
+                                return Icon(
+                                  starIndex < calificacionEstrellas
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  color: Colors.amber,
+                                  size: 25,
+                                );
+                              }),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 42.0),
+                          child: Text(
+                            comentario,
+                            style: const TextStyle(
+                                color: Colors.black, fontSize: 16, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
         ),
       ],
     );

@@ -2,9 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/profile/editar_perfil.dart'; // Importamos Firestore
+import 'dart:convert';
 
 class ProfileHeaderCard extends StatelessWidget {
   const ProfileHeaderCard({Key? key}) : super(key: key);
+
+  ImageProvider? _obtenerImagenPerfil(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    if (url.startsWith('base64,')) {
+      try {
+        final String cadenaLimpia = url.replaceFirst('base64,', '');
+        return MemoryImage(base64Decode(cadenaLimpia));
+      } catch (e) {
+        return null;
+      }
+    }
+    return NetworkImage(url);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +86,7 @@ class ProfileHeaderCard extends StatelessWidget {
               CircleAvatar(
                 radius: 40,
                 backgroundColor: const Color(0xFF009933).withOpacity(0.1),
-                backgroundImage:
-                    photoUrl != null ? NetworkImage(photoUrl) : null,
+                backgroundImage: _obtenerImagenPerfil(photoUrl),
                 child: photoUrl == null
                     ? Text(
                         inicialNombre,

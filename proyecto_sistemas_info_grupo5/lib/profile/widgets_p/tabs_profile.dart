@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/reserva_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
-import 'package:proyecto_sistemas_info_grupo5/modelos/reserva_model.dart';
 import 'emptystate.dart';
 
 class ProfileTabs extends StatefulWidget {
@@ -64,12 +63,81 @@ class _ProfileTabsState extends State<ProfileTabs> {
     }
   }
 
+  void _confirmarCancelacionReserva(
+      BuildContext context, String reservaId, String destinoNombre) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+              SizedBox(width: 10),
+              Text('Cancelar Reserva',
+                  style: TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que quieres cancelar tu reserva de "$destinoNombre"?\n\n(Tu dinero será reembolsado)',
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Volver',
+                  style: TextStyle(color: Colors.grey, fontSize: 16)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Navigator.pop(context);
+
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('reservas')
+                      .doc(reservaId)
+                      .update({'estado': 'cancelado'});
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Reserva cancelada y reembolso procesado con éxito.'),
+                          backgroundColor: Colors.red),
+                    );
+                    setState(() {
+                      _activeTabIndex =
+                          2; // Redirigir a la pestaña de Historial
+                    });
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Error al cancelar la reserva: $e'),
+                          backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('Sí, estoy seguro',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Botones de Toggle
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -86,7 +154,6 @@ class _ProfileTabsState extends State<ProfileTabs> {
           ],
         ),
         const SizedBox(height: 24),
-
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -127,7 +194,12 @@ class _ProfileTabsState extends State<ProfileTabs> {
   }
 
   void _mostrarPopUpResena(
-      BuildContext context, Reserva reserva, StateSetter parentSetState) {
+      BuildContext context,
+      String reservaId,
+      String destinoId,
+      String destinoNombre,
+      String urlImagen,
+      StateSetter parentSetState) {
     int calificacionSeleccionada = 0;
     String? errorEstrellas;
     final TextEditingController comentarioController = TextEditingController();
@@ -175,7 +247,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '¿Qué te pareció tu experiencia en ${reserva.destinoNombre}?',
+                      '¿Qué te pareció tu experiencia en $destinoNombre?',
                       style:
                           const TextStyle(fontSize: 14, color: Colors.black87),
                     ),
@@ -280,6 +352,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                         try {
                           final user = FirebaseAuth.instance.currentUser!;
                           String nombreRealUsuario = 'Viajero';
+
                           try {
                             final userDoc = await FirebaseFirestore.instance
                                 .collection('usuarios')
@@ -302,9 +375,9 @@ class _ProfileTabsState extends State<ProfileTabs> {
                           final nuevaResena = Resena(
                             usuarioId: user.uid,
                             usuarioNombre: nombreRealUsuario,
-                            destinoId: reserva.destinoId,
-                            destinoNombre: reserva.destinoNombre,
-                            urlImagenDestino: reserva.urlImagen,
+                            destinoId: destinoId,
+                            destinoNombre: destinoNombre,
+                            urlImagenDestino: urlImagen,
                             calificacion: calificacionSeleccionada,
                             comentario: comentarioController.text.trim(),
                             fechaResena: DateTime.now(),
@@ -312,27 +385,35 @@ class _ProfileTabsState extends State<ProfileTabs> {
 
                           await _resenaService.publicarResena(nuevaResena);
                           await _reservaService
-                              .marcarReservaComoCompleta(reserva.id);
+                              .marcarReservaComoCompleta(reservaId);
+                          await FirebaseFirestore.instance
+                              .collection('reservas')
+                              .doc(reservaId)
+                              .update({'estado': 'completado'});
 
-                          Navigator.pop(context);
-                          parentSetState(() {
-                            _activeTabIndex = 1;
-                          });
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            parentSetState(() {
+                              _activeTabIndex = 2;
+                            });
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  '¡Reseña publicada con éxito! Ya puedes verla en la sección de reseñas.'),
-                              backgroundColor: Color(0xFF009933),
-                            ),
-                          );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    '¡Reseña publicada con éxito! Destino movido al historial.'),
+                                backgroundColor: Color(0xFF009933),
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error al publicar reseña: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al publicar reseña: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text('PUBLICAR RESEÑA',
@@ -349,6 +430,25 @@ class _ProfileTabsState extends State<ProfileTabs> {
     );
   }
 
+  double _parsearPrecioSeguro(dynamic valor) {
+    if (valor == null) return 0.0;
+    if (valor is num) return valor.toDouble();
+    if (valor is String) {
+      final stringLimpio = valor.replaceAll('\$', '').trim();
+      return double.tryParse(stringLimpio) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  DateTime _parsearFechaSegura(dynamic valor) {
+    if (valor == null) return DateTime.now();
+    if (valor is Timestamp) return valor.toDate();
+    if (valor is String) {
+      return DateTime.tryParse(valor) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
   Widget _buildReservasTab() {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -360,8 +460,11 @@ class _ProfileTabsState extends State<ProfileTabs> {
       );
     }
 
-    return StreamBuilder<List<Reserva>>(
-      stream: _reservaService.obtenerReservasPorUsuario(user.uid),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reservas')
+          .where('usuarioId', isEqualTo: user.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -378,7 +481,17 @@ class _ProfileTabsState extends State<ProfileTabs> {
           );
         }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        final docsValidos = snapshot.data?.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final String estado =
+                  (data['estado'] ?? '').toString().toLowerCase().trim();
+              return estado != 'cancelado' &&
+                  estado != 'completo' &&
+                  estado != 'completado';
+            }).toList() ??
+            [];
+
+        if (docsValidos.isEmpty) {
           return const EmptyState(
             title: "No tienes reservas",
             subtitle: "Explora nuestros destinos y comienza tu aventura",
@@ -386,15 +499,25 @@ class _ProfileTabsState extends State<ProfileTabs> {
           );
         }
 
-        final listaReservas = snapshot.data!;
-
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          itemCount: listaReservas.length,
+          itemCount: docsValidos.length,
           itemBuilder: (context, index) {
-            final reserva = listaReservas[index];
+            final doc = docsValidos[index];
+            final data = doc.data() as Map<String, dynamic>;
+
+            final String idReserva = doc.id;
+            final String destinoNombre = data['destinoNombre'] ?? 'Destino';
+            final String destinoId = data['destinoId'] ?? '';
+            final String urlImagen = data['urlImagen'] ?? '';
+
+            final double precioTotal =
+                _parsearPrecioSeguro(data['precioTotal']);
+
+            final DateTime fechaCompra =
+                _parsearFechaSegura(data['fechaCompra']);
 
             return Card(
               margin: const EdgeInsets.only(bottom: 16),
@@ -416,7 +539,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                             width: 80,
                             height: 80,
                             color: Colors.grey[200],
-                            child: _buildImagenDestino(reserva.urlImagen,
+                            child: _buildImagenDestino(urlImagen,
                                 width: 100, height: 100),
                           ),
                         ),
@@ -426,7 +549,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                reserva.destinoNombre,
+                                destinoNombre,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 20),
                                 maxLines: 1,
@@ -434,7 +557,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Fecha: ${reserva.fechaCompra.day}/${reserva.fechaCompra.month}/${reserva.fechaCompra.year}',
+                                'Fecha: ${fechaCompra.day}/${fechaCompra.month}/${fechaCompra.year}',
                                 style: const TextStyle(
                                     fontSize: 16, color: Colors.grey),
                               ),
@@ -445,7 +568,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '\$${reserva.precioTotal.toStringAsFixed(2)}',
+                              '\$${precioTotal.toStringAsFixed(2)}',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 17),
                             ),
@@ -458,33 +581,68 @@ class _ProfileTabsState extends State<ProfileTabs> {
                     decoration: BoxDecoration(
                       border: Border(top: BorderSide(color: Colors.grey[100]!)),
                     ),
-                    child: InkWell(
-                      onTap: () =>
-                          _mostrarPopUpResena(context, reserva, setState),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        color: const Color(0xFFFFCC00),
-                        alignment: Alignment.center,
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.rate_review,
-                                color: Colors.black87, size: 16),
-                            SizedBox(width: 6),
-                            Text(
-                              'Escribir Reseña',
-                              style: TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _confirmarCancelacionReserva(
+                                context, idReserva, destinoNombre),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(12),
                             ),
-                          ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: Colors.red[600],
+                              alignment: Alignment.center,
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.cancel,
+                                      color: Colors.white, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Cancelar',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(width: 1, height: 40, color: Colors.white24),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _mostrarPopUpResena(context, idReserva,
+                                destinoId, destinoNombre, urlImagen, setState),
+                            borderRadius: const BorderRadius.only(
+                              bottomRight: Radius.circular(12),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: const Color(0xFFFFCC00),
+                              alignment: Alignment.center,
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.rate_review,
+                                      color: Colors.black87, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Escribir Reseña',
+                                    style: TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -548,8 +706,11 @@ class _ProfileTabsState extends State<ProfileTabs> {
           icon: Icons.lock_outline);
     }
 
-    return StreamBuilder<List<Reserva>>(
-      stream: _reservaService.obtenerHistorialPorUsuario(user.uid),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reservas')
+          .where('usuarioId', isEqualTo: user.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -557,25 +718,35 @@ class _ProfileTabsState extends State<ProfileTabs> {
               child: Center(
                   child: CircularProgressIndicator(color: Color(0xFF009933))));
         }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+
+        final docsHistorial = snapshot.data?.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final String estado =
+                  (data['estado'] ?? '').toString().toLowerCase().trim();
+              return estado == 'cancelado' ||
+                  estado == 'completo' ||
+                  estado == 'completado';
+            }).toList() ??
+            [];
+
+        if (docsHistorial.isEmpty) {
           return const EmptyState(
             title: "No has visitado ningún destino",
             subtitle:
-                "Aquí se mostrarán los destinos que hayas visitado y reseñado",
+                "Aquí se mostrarán los destinos que hayas visitado o cancelado",
             icon: Icons.history,
           );
         }
-
-        final listaHistorial = snapshot.data!;
 
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          itemCount: listaHistorial.length,
+          itemCount: docsHistorial.length,
           itemBuilder: (context, index) {
-            final reservaCompleta = listaHistorial[index];
-            return _buildCardHistorialEstilizada(reservaCompleta);
+            final doc = docsHistorial[index];
+            final data = doc.data() as Map<String, dynamic>;
+            return _buildCardHistorialEstilizada(data);
           },
         );
       },
@@ -641,7 +812,15 @@ class _ProfileTabsState extends State<ProfileTabs> {
     );
   }
 
-  Widget _buildCardHistorialEstilizada(Reserva reserva) {
+  Widget _buildCardHistorialEstilizada(Map<String, dynamic> data) {
+    final String estado =
+        (data['estado'] ?? '').toString().toLowerCase().trim();
+    final bool esCancelado = estado == 'cancelado';
+    final String destinoNombre = data['destinoNombre'] ?? 'Destino';
+    final String urlImagen = data['urlImagen'] ?? '';
+
+    final DateTime fechaCompra = _parsearFechaSegura(data['fechaCompra']);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -658,8 +837,8 @@ class _ProfileTabsState extends State<ProfileTabs> {
                   width: 110,
                   height: 110,
                   color: Colors.grey[100],
-                  child: _buildImagenDestino(reserva.urlImagen,
-                      width: 110, height: 110)),
+                  child:
+                      _buildImagenDestino(urlImagen, width: 110, height: 110)),
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -667,7 +846,7 @@ class _ProfileTabsState extends State<ProfileTabs> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    reserva.destinoNombre,
+                    destinoNombre,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -677,7 +856,9 @@ class _ProfileTabsState extends State<ProfileTabs> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Visitado: ${reserva.fechaCompra.day}/${reserva.fechaCompra.month}/${reserva.fechaCompra.year}',
+                    esCancelado
+                        ? 'Cancelado el: ${fechaCompra.day}/${fechaCompra.month}/${fechaCompra.year}'
+                        : 'Visitado: ${fechaCompra.day}/${fechaCompra.month}/${fechaCompra.year}',
                     style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                   ),
                 ],
@@ -687,10 +868,11 @@ class _ProfileTabsState extends State<ProfileTabs> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                  color: const Color(0xFF009933),
+                  color:
+                      esCancelado ? Colors.grey[600] : const Color(0xFF009933),
                   borderRadius: BorderRadius.circular(20)),
-              child: const Text('COMPLETADO',
-                  style: TextStyle(
+              child: Text(esCancelado ? 'CANCELADO' : 'COMPLETADO',
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold)),
