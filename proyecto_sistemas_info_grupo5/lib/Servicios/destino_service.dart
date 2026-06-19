@@ -19,12 +19,8 @@ class DestinoService {
       if (destino.id == null || destino.id!.isEmpty) {
         throw Exception('No se puede actualizar un destino sin un ID válido.');
       }
-      
-      await _db
-          .collection('destinos')
-          .doc(destino.id)
-          .update(destino.toMap());
-          
+
+      await _db.collection('destinos').doc(destino.id).update(destino.toMap());
     } catch (e) {
       throw Exception('Error al actualizar el destino en la base de datos: $e');
     }
@@ -38,7 +34,6 @@ class DestinoService {
       }
 
       await _db.collection('destinos').doc(id).delete();
-      
     } catch (e) {
       throw Exception('Error al eliminar el destino de la base de datos: $e');
     }
@@ -48,15 +43,16 @@ class DestinoService {
   Future<List<Destino>> obtenerDestinos() async {
     try {
       QuerySnapshot snapshot = await _db.collection('destinos').get();
-      
+
       // Mapeamos cada documento de Firestore convirtiéndolo en un objeto Destino
       return snapshot.docs.map((doc) {
         // Usamos el constructor fromFirestore pasándole el ID y los datos
-        return Destino.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+        return Destino.fromFirestore(
+            doc.id, doc.data() as Map<String, dynamic>);
       }).toList();
-      
     } catch (e) {
-      throw Exception('Error al obtener los destinos desde la base de datos: $e');
+      throw Exception(
+          'Error al obtener los destinos desde la base de datos: $e');
     }
   }
 
@@ -64,8 +60,11 @@ class DestinoService {
   Stream<List<Destino>> obtenerDestinosStream() {
     return _db.collection('destinos').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Destino.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+        return Destino.fromFirestore(
+            doc.id, doc.data() as Map<String, dynamic>);
       }).toList();
     });
   }
+
+  Stream<List<Destino>>? obtenerDestinosPorCategoria(String categoriaFiltro) {}
 }

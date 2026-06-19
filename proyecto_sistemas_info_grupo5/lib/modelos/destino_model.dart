@@ -81,4 +81,6 @@ class Destino {
       estado: estado ?? this.estado,
     );
   }
+
+  static fromMap(Map<String, dynamic> data) {}
 }

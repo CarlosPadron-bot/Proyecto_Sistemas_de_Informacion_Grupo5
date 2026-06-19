@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
-import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart' hide CustomHeader;
+import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart'
+    hide CustomHeader;
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -14,7 +15,7 @@ class AdminDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- BARRA EXCLUSIVA DE ADMIN 
+            // --- BARRA EXCLUSIVA DE ADMIN
             Container(
               width: double.infinity,
               color: const Color.fromARGB(255, 45, 133, 49),
@@ -26,10 +27,11 @@ class AdminDashboard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '¡Bienvenido Administrador! ',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  // 
+                  //
                 ],
               ),
             ),
