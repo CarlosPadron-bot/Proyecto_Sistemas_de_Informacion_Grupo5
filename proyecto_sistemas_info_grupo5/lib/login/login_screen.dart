@@ -5,6 +5,7 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/admin/admin_dashboard.dart';
 import 'package:proyecto_sistemas_info_grupo5/operador/operador_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -53,6 +54,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (userCredential != null && userCredential.user != null) {
         String uid = userCredential.user!.uid;
+
+        // 🔥 --- NUEVA VERIFICACIÓN: DETECTAR BORRADO LÓGICO --- 🔥
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid)
+            .get();
+
+        if (userDoc.exists) {
+          final data = userDoc.data() as Map<String, dynamic>?;
+          final bool estaEliminado = data?['eliminado'] ?? false;
+
+          // Si el usuario tiene la marca de eliminado, frenamos el acceso en seco
+          if (estaEliminado) {
+            await FirebaseAuth.instance.signOut(); // Lo expulsamos de las sesiones activas
+            if (mounted) {
+              setState(() {
+                _errorCredenciales = 'Esta cuenta ha sido eliminada por la administración.';
+              });
+            }
+            return; // Cortamos la función para que no avance hacia los dashboards ni la homepage
+          }
+        }
 
         // 2. Consultar el rol en Firestore antes de redirigir
         String? rol = await _authService.obtenerRol(uid);

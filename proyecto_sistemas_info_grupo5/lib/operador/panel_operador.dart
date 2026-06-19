@@ -8,6 +8,8 @@ import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 class PanelOperador extends StatefulWidget {
   const PanelOperador({super.key});
 
@@ -107,6 +109,68 @@ class _PanelOperadorState extends State<PanelOperador> {
     ).then((_) {
       setState(() {}); // Refrescar la tabla al volver
     });
+  }
+  // VALIDACIÓN DE PERMISOS ANTES DE CREAR NUEVO SERVICIO
+  Future<void> _verificarPermisosYNavegar(String categoria) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final bool esActivo = data['activo'] ?? true;
+        final bool esEliminado = data['eliminado'] ?? false;
+
+        // Si está inactivo o eliminado, mostramos el bloqueo y NO navegamos
+        if (!esActivo || esEliminado) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Acción denegada', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+                content: const Text('Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Entendido', style: TextStyle(color: Colors.blue)),
+                  ),
+                ],
+              ),
+            );
+          }
+          return; // Detenemos la ejecución aquí
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al verificar cuenta: $e'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    // SI PASA LA VALIDACIÓN, NAVEGAMOS A LA PANTALLA NORMALMENTE
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CargarDestinoPage(categoriaInicial: categoria),
+        ),
+      ).then((_) => setState(() {}));
+    }
   }
 
   @override
@@ -342,14 +406,8 @@ class _PanelOperadorState extends State<PanelOperador> {
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          CargarDestinoPage(categoriaInicial: categoria)),
-                ).then((_) => setState(() {}));
-              },
+              //  La nueva función que bloquea si está inactivo
+              onPressed: () => _verificarPermisosYNavegar(categoria), 
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
                   'Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',

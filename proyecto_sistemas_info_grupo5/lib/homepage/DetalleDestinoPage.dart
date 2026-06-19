@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets_generales/header_gen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // <-- AÑADIDO: Import para validar estado en la BD
 import '../login/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -120,7 +121,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         });
 
         _mostrarSnackBar(
-            'Procesando y confirmando tu pago con PayPal...', Colors.blue);
+            'Procesando y confirming tu pago con PayPal...', Colors.blue);
 
         // 3. Capturar el pago de la orden
         final captureResponse = await http.post(
@@ -257,6 +258,42 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
       _mostrarSnackBar('Ocurrió un error con PayPal: $e', Colors.redAccent);
       setState(() => _cargandoPago = false);
     }
+  }
+
+  // AÑADIDO: Diálogo estético para advertir la suspensión
+  void _mostrarAlertaSuspendido(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.gpp_bad_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 10),
+              Text('Cuenta Suspendida', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Tu cuenta de viajero se encuentra temporalmente suspendida por la administración. '
+            'No puedes realizar compras de paquetes ni reservas en este momento.\n\n'
+            'Si crees que se trata de un error, comunícate con soporte.',
+            style: TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Entendido', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _mostrarSnackBar(String mensaje, Color color) {
@@ -697,9 +734,10 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                       borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
+                // CAMBIADO A ASYNC: Lógica de validación de suspensión integrada aquí
                 onPressed: _cargandoPago
                     ? null
-                    : () {
+                    : () async {
                         final usuarioActual = FirebaseAuth.instance.currentUser;
 
                         if (usuarioActual == null) {
@@ -714,6 +752,34 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                           return;
                         }
 
+                        // Activamos el spinner visual preventivamente mientras consultamos Firestore
+                        setState(() => _cargandoPago = true);
+
+                        try {
+                          // Consultamos de forma asíncrona el documento del usuario directo en Firestore
+                          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+                              .collection('usuarios')
+                              .doc(usuarioActual.uid)
+                              .get();
+
+                          if (userDoc.exists) {
+                            final data = userDoc.data() as Map<String, dynamic>?;
+                            final bool estaActivo = data?['activo'] ?? true;
+
+                            // 🔥 SI EL VIAJERO ESTÁ SUSPENDIDO: Detenemos todo, apagamos spinner y alertamos
+                            if (!estaActivo) {
+                              setState(() => _cargandoPago = false);
+                              _mostrarAlertaSuspendido(context);
+                              return; 
+                            }
+                          }
+                        } catch (e) {
+                          setState(() => _cargandoPago = false);
+                          _mostrarSnackBar('Error al verificar el estado de tu cuenta: $e', Colors.redAccent);
+                          return;
+                        }
+
+                        // Si pasó la prueba de fuego y está activo, procesa el pago normal
                         _iniciarPagoPayPal(total);
                       },
                 child: _cargandoPago

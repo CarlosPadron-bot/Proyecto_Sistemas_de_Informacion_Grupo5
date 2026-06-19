@@ -99,7 +99,11 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
         await FirebaseFirestore.instance
             .collection('usuarios')
             .doc(uid)
-            .delete();
+            .update({
+              'activo': false,
+              'eliminado': true, // Este es el campo que bloqueará el login
+            });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -141,7 +145,10 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
               child: Text('No se encontraron usuarios en el sistema.'));
         }
 
-        final allUsers = snapshot.data!.docs;
+        final allUsers = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['eliminado'] != true; // Excluye usuarios eliminados
+        }).toList();
 
         int viajerosCount = 0;
         int operadoresCount = 0;
@@ -329,6 +336,8 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                           (data['rol'] ?? 'viajero').toString().toLowerCase();
                       if (rol == 'administrador') rol = 'admin';
 
+                      bool esAdmin = (rol == "admin");
+
                       return DataRow(cells: [
                         DataCell(
                           Row(
@@ -368,8 +377,16 @@ class _GestionUsuariosDashboardState extends State<GestionUsuariosDashboard> {
                                     isActivo ? Colors.black87 : Colors.grey))),
                         DataCell(_buildEtiquetaRol(rol, isActivo)),
                         DataCell(
-                          Row(
-                            children: [
+                          esAdmin 
+                            ? const Row(
+                                children: [
+                                  Icon(Icons.security, color: Colors.grey, size: 18),
+                                  SizedBox(width: 6),
+                                  Text('Protegido', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13)),
+                                ],
+                              )
+                            : Row(
+                              children: [
                               IconButton(
                                 icon: Icon(
                                     isActivo
