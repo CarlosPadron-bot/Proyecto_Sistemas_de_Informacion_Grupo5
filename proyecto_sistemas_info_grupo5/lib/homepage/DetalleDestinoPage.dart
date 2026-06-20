@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets_generales/header_gen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // <-- AÑADIDO: Import para validar estado en la BD
@@ -8,7 +9,6 @@ import 'dart:convert';
 import 'dart:html' as html;
 import '../Servicios/reserva_service.dart';
 import '../modelos/reserva_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DetalleDestinoPage extends StatefulWidget {
   final String title;
@@ -260,6 +260,33 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     }
   }
 
+  void _mostrarSnackBar(String mensaje, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje), backgroundColor: color),
+    );
+  }
+
+  //  Nueva funcion para abrir la ubicacion en Google Maps
+  Future<void> _abrirEnGoogleMaps() async {
+    // Une la ubicación actual con el país para mayor precisión
+    final String busquedaCodificada = Uri.encodeComponent('${widget.location}, Venezuela');
+    
+    // URL universal de búsqueda en Google Maps
+    final Uri urlMaps = Uri.parse('https://www.google.com/maps/search/?api=1&query=$busquedaCodificada');
+
+    try {
+      if (await canLaunchUrl(urlMaps)) {
+        await launchUrl(urlMaps, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'No se pudo abrir el mapa.';
+      }
+    } catch (e) {
+      if (mounted) {
+        _mostrarSnackBar('Error: No se pudo abrir Google Maps.', Colors.red);
+      }
+    }
+  }
+
   // AÑADIDO: Diálogo estético para advertir la suspensión
   void _mostrarAlertaSuspendido(BuildContext context) {
     showDialog(
@@ -296,11 +323,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     );
   }
 
-  void _mostrarSnackBar(String mensaje, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensaje), backgroundColor: color),
-    );
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -489,7 +512,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
               const SizedBox(height: 15),
               Center(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: _abrirEnGoogleMaps,
                   icon: const Icon(Icons.location_on, color: Colors.white),
                   label: const Text('Ver en Google Maps',
                       style: TextStyle(color: Colors.white)),
@@ -766,7 +789,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                             final data = userDoc.data() as Map<String, dynamic>?;
                             final bool estaActivo = data?['activo'] ?? true;
 
-                            // 🔥 SI EL VIAJERO ESTÁ SUSPENDIDO: Detenemos todo, apagamos spinner y alertamos
+                            //  SI EL VIAJERO ESTÁ SUSPENDIDO: Detenemos todo, apagamos spinner y alertamos
                             if (!estaActivo) {
                               setState(() => _cargandoPago = false);
                               _mostrarAlertaSuspendido(context);
