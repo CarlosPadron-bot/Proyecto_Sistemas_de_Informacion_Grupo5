@@ -6,10 +6,11 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
+import 'package:proyecto_sistemas_info_grupo5/operador/grafico_operador.dart';
+import 'package:proyecto_sistemas_info_grupo5/operador/tarjetainfo_operador.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PanelOperador extends StatefulWidget {
   const PanelOperador({super.key});
 
@@ -257,21 +258,31 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  Widget _buildTabDashboard() {
-    return Column(
+ // Asegúrate de importar el nuevo archivo al inicio de tu documento
+// import 'ruta/hacia/tu/graficos_operador.dart';
+
+Widget _buildTabDashboard() {
+  return SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        // 1. Las nuevas tarjetas de información integradas al principio
+        const SeccionTarjetasInfo(),
+        
+        const SizedBox(height: 20), // Mismo espaciado que ya usabas
+
+        // 2. Gráficos de Precios y Estados
+        const Row(
           children: [
-            Expanded(
-                child: _buildMockCard('Destinos por Rango de Precio',
-                    Icons.bar_chart, Colors.blue)),
-            const SizedBox(width: 20),
-            Expanded(
-                child: _buildMockCard(
-                    'Distribución por Estado', Icons.pie_chart, Colors.orange)),
+            Expanded(child: GraficoPrecios()), // Llamado al nuevo widget
+            SizedBox(width: 20),
+            Expanded(child: GraficoEstados()), // Llamado al nuevo widget
           ],
         ),
+        
         const SizedBox(height: 20),
+        
+        // 3. Estado de Reservas e Ingresos
         Row(
           children: [
             Expanded(
@@ -286,43 +297,26 @@ class _PanelOperadorState extends State<PanelOperador> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Estado de Reservas',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 15),
                     Row(
                       children: [
-                        // StreamBuilder en tiempo real para contar documentos en la colección de reservas
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('reservas')
-                                .snapshots(),
+                            stream: FirebaseFirestore.instance.collection('reservas').snapshots(),
                             builder: (context, snapshot) {
-                              String totalReservas = '0';
-                              if (snapshot.hasData) {
-                                totalReservas =
-                                    snapshot.data!.docs.length.toString();
-                              }
-                              return _buildReservaStat(
-                                  totalReservas, 'Pagadas', Colors.green);
+                              String totalReservas = snapshot.hasData ? snapshot.data!.docs.length.toString() : '0';
+                              return _buildReservaStat(totalReservas, 'Pagadas', Colors.green);
                             },
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // StreamBuilder en tiempo real para contar documentos en la colección de reseñas (completadas)
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('resenas')
-                                .snapshots(),
+                            stream: FirebaseFirestore.instance.collection('resenas').snapshots(),
                             builder: (context, snapshot) {
-                              String totalCompletadas = '0';
-                              if (snapshot.hasData) {
-                                totalCompletadas =
-                                    snapshot.data!.docs.length.toString();
-                              }
-                              return _buildReservaStat(totalCompletadas,
-                                  'Completadas', Colors.purple);
+                              String totalCompletadas = snapshot.hasData ? snapshot.data!.docs.length.toString() : '0';
+                              return _buildReservaStat(totalCompletadas, 'Completadas', Colors.purple);
                             },
                           ),
                         ),
@@ -333,15 +327,15 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 20),
-            Expanded(
-                child: _buildMockCard('Ingresos Mensuales',
-                    Icons.stacked_line_chart, Colors.green)),
+            const Expanded(child: GraficoIngresos()), // Llamado al nuevo widget
           ],
         ),
       ],
-    );
-  }
-
+    ),
+  );
+}
+ 
+ 
   Widget _buildReservaStat(String numero, String texto, Color color) {
     return Container(
       padding: const EdgeInsets.all(15),
