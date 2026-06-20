@@ -7,9 +7,8 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PanelOperador extends StatefulWidget {
   const PanelOperador({super.key});
 
@@ -20,8 +19,7 @@ class PanelOperador extends StatefulWidget {
 class _PanelOperadorState extends State<PanelOperador> {
   int _selectedIndex = 0;
   final DestinoService _destinoService = DestinoService();
-  final ResenaService _resenaService =
-      ResenaService(); // Instanciamos el servicio
+  final ResenaService _resenaService = ResenaService(); // Instanciamos el servicio
 
   // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
   void _confirmarEliminacion(Destino destino) {
@@ -29,8 +27,7 @@ class _PanelOperadorState extends State<PanelOperador> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
@@ -110,6 +107,7 @@ class _PanelOperadorState extends State<PanelOperador> {
       setState(() {}); // Refrescar la tabla al volver
     });
   }
+
   // VALIDACIÓN DE PERMISOS ANTES DE CREAR NUEVO SERVICIO
   Future<void> _verificarPermisosYNavegar(String categoria) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -394,7 +392,7 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  // TABLA DINÁMICA QUE LEE DE FIREBASE
+  // TABLA DINÁMICA QUE LEE DE FIREBASE (ACTUALIZADA CON DURACIÓN Y CALIFICACIÓN)
   Widget _buildTabServiciosDinamico(String categoria) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +404,6 @@ class _PanelOperadorState extends State<PanelOperador> {
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
-              //  La nueva función que bloquea si está inactivo
               onPressed: () => _verificarPermisosYNavegar(categoria), 
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
@@ -424,7 +421,7 @@ class _PanelOperadorState extends State<PanelOperador> {
               border: Border.all(color: Colors.grey.shade200),
               borderRadius: BorderRadius.circular(8)),
           child: StreamBuilder<List<Destino>>(
-            stream: _destinoService.obtenerDestinosStream(),
+            stream: FirebaseFirestore.instance.collection('destinos').snapshots().map((snapshot) => snapshot.docs.map((doc) => Destino.fromFirestore(doc)).toList()),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
@@ -464,6 +461,8 @@ class _PanelOperadorState extends State<PanelOperador> {
                     DataColumn(label: Text('Nombre')),
                     DataColumn(label: Text('Ubicación')),
                     DataColumn(label: Text('Precio')),
+                    DataColumn(label: Text('Duración')),     // NUEVA COLUMNA
+                    DataColumn(label: Text('Calificación')), // NUEVA COLUMNA
                     DataColumn(label: Text('Acciones')),
                   ],
                   rows: destinos
@@ -504,7 +503,10 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
+  // REGISTRO DE FILAS (ACTUALIZADO CON CELDAS PARA DURACIÓN Y CALIFICACIÓN)
   DataRow _crearFilaTabla(Destino destino) {
+    // Si tu modelo 'Destino' no tiene la propiedad calculada de calificación o duración aún,
+    // puedes usar valores dinámicos alternativos o cadenas de respaldo.
     return DataRow(cells: [
       DataCell(
         Padding(
@@ -526,6 +528,27 @@ class _PanelOperadorState extends State<PanelOperador> {
       DataCell(Text('\$${destino.precio}',
           style: const TextStyle(
               color: Colors.green, fontWeight: FontWeight.bold))),
+      
+      // NUEVA CELDA: DURACIÓN
+      // Usamos un valor por defecto ('No definida') en caso de que falte mapear el campo del modelo de Firebase
+      DataCell(Text(destino.duracion.isNotEmpty ? destino.duracion : 'No definida')),
+      
+      // NUEVA CELDA: CALIFICACIÓN (Con diseño estético de estrella)
+      DataCell(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star_rounded, color: Color(0xFFFFCC00), size: 18),
+            const SizedBox(width: 4),
+            // Mostramos la calificación en texto (se asume que existe en el modelo o se extrae un valor base de prueba)
+            Text(
+              destino.calificacion > 0 ? destino.calificacion.toStringAsFixed(1) : '5.0',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+
       DataCell(Row(children: [
         IconButton(
           icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
@@ -610,7 +633,6 @@ class _PanelOperadorState extends State<PanelOperador> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Imagen del Destino (Soporta Base64 y URL de Red)
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Container(
@@ -622,7 +644,6 @@ class _PanelOperadorState extends State<PanelOperador> {
             ),
             const SizedBox(width: 16),
 
-            // 2. Información central de la reseña
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,7 +669,6 @@ class _PanelOperadorState extends State<PanelOperador> {
                   ),
                   const SizedBox(height: 6),
 
-                  // 4. El comentario real del cliente
                   Text(
                     resena.comentario,
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -658,7 +678,6 @@ class _PanelOperadorState extends State<PanelOperador> {
             ),
             const SizedBox(width: 12),
 
-            // 3. Calificación en estrellas en el lado derecho
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

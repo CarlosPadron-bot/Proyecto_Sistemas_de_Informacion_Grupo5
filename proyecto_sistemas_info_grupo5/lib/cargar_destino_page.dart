@@ -30,6 +30,10 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _infoExtraController = TextEditingController();
   final TextEditingController _incluyeController = TextEditingController(); 
+  
+  // Controladores listos para duración y calificación
+  final TextEditingController _duracionController = TextEditingController();
+  final TextEditingController _calificacionController = TextEditingController();
 
   String _estadoSeleccionado = 'Caracas';
   bool _cargando = false;
@@ -48,7 +52,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
     'Otros'
   ];
 
-  // --- NUEVO: PRE-LLENAR DATOS SI ESTAMOS EDITANDO ---
   @override
   void initState() {
     super.initState();
@@ -60,11 +63,27 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
       _infoExtraController.text = widget.destinoAEditar!.infoExtra;
       _incluyeController.text = widget.destinoAEditar!.queIncluye.join(', ');
       
-      // Asegurarse de que el estado guardado esté en la lista, si no, poner un valor por defecto
+      // Ahora que el modelo ya tiene las variables, esto no dará error:
+      _duracionController.text = widget.destinoAEditar!.duracion;
+      _calificacionController.text = widget.destinoAEditar!.calificacion.toString();
+      
       if (_estados.contains(widget.destinoAEditar!.estado)) {
         _estadoSeleccionado = widget.destinoAEditar!.estado;
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _ubicacionController.dispose();
+    _precioController.dispose();
+    _descripcionController.dispose();
+    _infoExtraController.dispose();
+    _incluyeController.dispose();
+    _duracionController.dispose();
+    _calificacionController.dispose();
+    super.dispose();
   }
 
   Future<void> _seleccionarImagen() async {
@@ -109,8 +128,8 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
 
     try {
       double precioDouble = double.tryParse(_precioController.text.trim()) ?? 0.0;
+      double calificacionDouble = double.tryParse(_calificacionController.text.trim()) ?? 0.0;
 
-      // MODIFICACIÓN: Si estamos editando y no seleccionamos imagen nueva, mantenemos la anterior
       String imagenBase64 = widget.destinoAEditar?.urlImagen ?? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7'; 
 
       if (_imagenSeleccionada != null) {
@@ -120,9 +139,8 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
         imagenBase64 = 'base64,$base64String'; 
       }
 
-      // Creamos el objeto Destino. Si estamos editando, conservamos su ID original
       Destino nuevoDestino = Destino(
-        id: widget.destinoAEditar?.id, // <-- Importante para que Firebase sepa cuál actualizar
+        id: widget.destinoAEditar?.id, 
         nombre: _nombreController.text.trim(),
         ubicacion: _ubicacionController.text.trim(),
         precio: precioDouble,
@@ -134,11 +152,12 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
             : _infoExtraController.text.trim(),
         queIncluye: incluyeList.isEmpty ? ['Hospedaje o Guía'] : incluyeList,
         estado: _estadoSeleccionado,
+        duracion: _duracionController.text.trim().isEmpty ? 'No definida' : _duracionController.text.trim(),
+        calificacion: calificacionDouble,
       );
 
-      // MODIFICACIÓN: Decidir si Crear o Actualizar
       if (widget.destinoAEditar != null) {
-        await _destinoService.actualizarDestino(nuevoDestino); // <-- Debes tener este método en tu DestinoService
+        await _destinoService.actualizarDestino(nuevoDestino); 
       } else {
         await _destinoService.guardarDestino(nuevoDestino);
       }
@@ -166,7 +185,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Variable para saber si estamos editando
     bool esEdicion = widget.destinoAEditar != null;
 
     return Scaffold(
@@ -178,7 +196,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // MODIFICACIÓN: Título dinámico
               Text(
                 '${esEdicion ? 'Editar' : 'Publicar'} ${widget.categoriaInicial == 'Alojamientos' ? 'Alojamiento' : 'Paquete Turístico'}',
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -242,6 +259,40 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                 ],
               ),
               const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _duracionController,
+                      decoration: const InputDecoration(
+                          labelText: 'Duración (Ej: 3 días / 2 noches)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.timer_outlined)),
+                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese la duración' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _calificacionController,
+                      decoration: const InputDecoration(
+                          labelText: 'Calificación inicial (0.0 - 5.0)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.star_border)),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Ingrese la calificación';
+                        final val = double.tryParse(value);
+                        if (val == null || val < 0.0 || val > 5.0) {
+                          return 'Debe ser entre 0.0 y 5.0';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _incluyeController,
                 decoration: const InputDecoration(
@@ -259,7 +310,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                 validator: (value) => (value == null || value.isEmpty) ? 'Ingrese una descripción' : null,
               ),
               const SizedBox(height: 16),
-              
               Text(
                 esEdicion ? 'Actualizar imagen de portada (Opcional)' : 'Imagen de portada',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -278,7 +328,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                   ),
                   child: _imagenSeleccionada == null
                       ? (esEdicion && widget.destinoAEditar!.urlImagen.startsWith('base64,'))
-                          // Si es edición y ya tenía un base64, lo previsualizamos
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.memory(
@@ -302,7 +351,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                         ),
                 ),
               ),
-
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
@@ -312,7 +360,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                   onPressed: _cargando ? null : _publicarDestino,
                   child: _cargando
                       ? const CircularProgressIndicator(color: Colors.white)
-                      // MODIFICACIÓN: Texto del botón dinámico
                       : Text(esEdicion ? 'ACTUALIZAR CAMBIOS' : 'PUBLICAR AHORA',
                           style: const TextStyle(
                               color: Colors.white,

@@ -1,86 +1,65 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Destino {
   final String? id;
   final String nombre;
   final String ubicacion;
   final double precio;
-  final String descripcion;
   final String urlImagen;
   final String categoria;
+  final String descripcion;
   final String infoExtra;
   final List<String> queIncluye;
   final String estado;
+  final String duracion;       
+  final double calificacion;   
 
   Destino({
     this.id,
     required this.nombre,
     required this.ubicacion,
     required this.precio,
-    required this.descripcion,
     required this.urlImagen,
     required this.categoria,
+    required this.descripcion,
     required this.infoExtra,
     required this.queIncluye,
     required this.estado,
+    required this.duracion,    
+    required this.calificacion, 
   });
 
-  /// Método para convertir el objeto a un Map (Para GUARDAR en Firestore)
-  Map<String, dynamic> toMap() {
+  factory Destino.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Destino(
+      id: doc.id,
+      nombre: data['nombre'] ?? '',
+      ubicacion: data['ubicacion'] ?? '',
+      precio: (data['precio'] ?? 0.0).toDouble(),
+      urlImagen: data['urlImagen'] ?? '',
+      categoria: data['categoria'] ?? '',
+      descripcion: data['descripcion'] ?? '',
+      infoExtra: data['infoExtra'] ?? '',
+      queIncluye: List<String>.from(data['queIncluye'] ?? []),
+      estado: data['estado'] ?? 'Caracas',
+      duracion: data['duracion'] ?? 'No definida', 
+      calificacion: (data['calificacion'] ?? 0.0).toDouble(), 
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
     return {
       'nombre': nombre,
       'ubicacion': ubicacion,
       'precio': precio,
-      'descripcion': descripcion,
       'urlImagen': urlImagen,
       'categoria': categoria,
+      'descripcion': descripcion,
       'infoExtra': infoExtra,
       'queIncluye': queIncluye,
       'estado': estado,
+      'duracion': duracion,       
+      'calificacion': calificacion, 
     };
   }
-
-  /// Factory para crear un objeto a partir de un Map (Para LEER de Firestore)
-  factory Destino.fromFirestore(String documentId, Map<String, dynamic> map) {
-    return Destino(
-      id: documentId,
-      nombre: map['nombre'] ?? '',
-      ubicacion: map['ubicacion'] ?? '',
-      precio: (map['precio'] ?? 0.0).toDouble(),
-      descripcion: map['descripcion'] ?? '',
-      urlImagen: map['urlImagen'] ?? '',
-      categoria: map['categoria'] ?? 'Paquetes Turisticos',
-      infoExtra: map['infoExtra'] ?? '',
-      queIncluye: List<String>.from(map['queIncluye'] ?? []),
-      estado: map['estado'] ?? 'Otros',
-    );
-  }
-
-  /// Método copyWith para crear copias del objeto modificando campos específicos
-  /// (Ideal para trabajar con variables 'final')
-  Destino copyWith({
-    String? id,
-    String? nombre,
-    String? ubicacion,
-    double? precio,
-    String? descripcion,
-    String? urlImagen,
-    String? categoria,
-    String? infoExtra,
-    List<String>? queIncluye,
-    String? estado,
-  }) {
-    return Destino(
-      id: id ?? this.id,
-      nombre: nombre ?? this.nombre,
-      ubicacion: ubicacion ?? this.ubicacion,
-      precio: precio ?? this.precio,
-      descripcion: descripcion ?? this.descripcion,
-      urlImagen: urlImagen ?? this.urlImagen,
-      categoria: categoria ?? this.categoria,
-      infoExtra: infoExtra ?? this.infoExtra,
-      queIncluye: queIncluye ?? this.queIncluye,
-      estado: estado ?? this.estado,
-    );
-  }
-
-  static fromMap(Map<String, dynamic> data) {}
 }
