@@ -35,4 +35,18 @@ class ResenaService {
       return lista;
     });
   }
+
+  Stream<List<Resena>> obtenerResenasPorOperador(String operadorId) {
+    return _db
+        .collection('resenas')
+        .where('operadorId', isEqualTo: operadorId)
+        .snapshots()
+        .map((snapshot) {
+      final lista = snapshot.docs
+          .map((doc) => Resena.fromMap(doc.data(), doc.id))
+          .toList();
+      lista.sort((a, b) => b.fechaResena.compareTo(a.fechaResena));
+      return lista;
+    });
+  }
 }

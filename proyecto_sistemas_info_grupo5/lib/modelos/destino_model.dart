@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Destino {
   final String? id;
   final String nombre;
@@ -10,6 +12,7 @@ class Destino {
   final List<String> queIncluye;
   final String estado;
   final String operadorId;
+  final Timestamp? fechaReserva;
 
   Destino({
     this.id,
@@ -23,6 +26,7 @@ class Destino {
     required this.queIncluye,
     required this.estado,
     required this.operadorId,
+    this.fechaReserva,
   });
 
   /// Método para convertir el objeto a un Map (Para GUARDAR en Firestore)
@@ -37,6 +41,8 @@ class Destino {
       'infoExtra': infoExtra,
       'queIncluye': queIncluye,
       'estado': estado,
+      'operadorId': operadorId,
+      'fechaReserva': fechaReserva,
     };
   }
 
@@ -54,6 +60,7 @@ class Destino {
       queIncluye: List<String>.from(map['queIncluye'] ?? []),
       estado: map['estado'] ?? 'Otros',
       operadorId: map['operadorId'] ?? '',
+      fechaReserva: map['fechaReserva'] as Timestamp?,
     );
   }
 
@@ -69,6 +76,7 @@ class Destino {
     List<String>? queIncluye,
     String? estado,
     String? operadorId,
+    Timestamp? fechaReserva,
   }) {
     return Destino(
       id: id ?? this.id,
@@ -82,6 +90,7 @@ class Destino {
       queIncluye: queIncluye ?? this.queIncluye,
       estado: estado ?? this.estado,
       operadorId: operadorId ?? this.operadorId,
+      fechaReserva: fechaReserva ?? this.fechaReserva,
     );
   }
 

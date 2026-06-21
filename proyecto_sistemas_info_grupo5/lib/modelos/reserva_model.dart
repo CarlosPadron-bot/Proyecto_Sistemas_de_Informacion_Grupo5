@@ -7,6 +7,7 @@ class Reserva {
   final DateTime fechaCompra;
   final String urlImagen; // <-- 1. Agregamos la propiedad aquí
   final bool completa;
+  final String operadorId;
 
   Reserva({
     required this.id,
@@ -17,6 +18,7 @@ class Reserva {
     required this.fechaCompra,
     required this.urlImagen, // <-- 2. La requerimos en el constructor
     this.completa = false,
+    required this.operadorId,
   });
 
   // 3. Mapeo para enviar los datos de forma limpia a Firebase Firestore
@@ -47,6 +49,7 @@ class Reserva {
           : DateTime.now(),
       urlImagen: json['urlImagen'] ?? '',
       completa: json['completa'] ?? false,
+      operadorId: json['operadorId'] ?? '',
     );
   }
 }

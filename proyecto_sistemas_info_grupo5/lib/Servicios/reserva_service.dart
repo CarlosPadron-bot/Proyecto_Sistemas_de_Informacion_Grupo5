@@ -7,10 +7,13 @@ class ReservaService {
   // Función para guardar la reserva con la imagen incluida
   Future<void> registrarReserva(Reserva reserva) async {
     try {
-      // El método .toMap() ahora incluye automáticamente la propiedad 'urlImagen'
-      await _firestore.collection('reservas').add(reserva.toMap());
+      Map<String, dynamic> data = reserva.toMap();
+      // Aseguramos que guarde el estado que tu panel busca
+      data['estado'] = 'Pagada';
+      data.remove('id');
+      await _firestore.collection('reservas').add(data);
     } catch (e) {
-      throw Exception('Error al registrar la reserva en Firestore: $e');
+      throw Exception('Error al registrar: $e');
     }
   }
 

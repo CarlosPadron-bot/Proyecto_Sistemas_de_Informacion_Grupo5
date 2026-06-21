@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
             captureResponse.statusCode == 201) {
           if (dataOrden['status'] == 'COMPLETED') {
             final user = FirebaseAuth.instance.currentUser;
-
+            String operadorIdDelDestino = '';
             String imagenDelDestino = '';
             try {
               final destinoQuery = await FirebaseFirestore.instance
@@ -117,14 +117,19 @@ class _HomePageState extends State<HomePage> {
                   .get();
 
               if (destinoQuery.docs.isNotEmpty) {
-                final destinoDocRef = destinoQuery.docs.first.reference;
-                imagenDelDestino =
-                    destinoQuery.docs.first.data()['urlImagen'] ?? '';
+                // ASIGNAMOS VALORES A LAS VARIABLES DECLARADAS
+                final docDestino = destinoQuery.docs.first;
+                final dataDestino = docDestino.data();
 
+                imagenDelDestino = dataDestino['urlImagen'] ?? '';
+                operadorIdDelDestino =
+                    dataDestino['operadorId'] ?? ''; // Ahora esto funciona
+
+                // Realizamos la transacción usando la referencia del documento
                 await FirebaseFirestore.instance
                     .runTransaction((transaction) async {
                   DocumentSnapshot snapshotDestino =
-                      await transaction.get(destinoDocRef);
+                      await transaction.get(docDestino.reference);
                   if (snapshotDestino.exists) {
                     Map<String, dynamic> data =
                         snapshotDestino.data() as Map<String, dynamic>;
@@ -132,31 +137,26 @@ class _HomePageState extends State<HomePage> {
 
                     if (infoExtraActual.contains('|')) {
                       List<String> partes = infoExtraActual.split('|');
-                      String textoCupos = partes[0].trim();
-                      String textoFecha = partes[1].trim();
-
-                      int cuposActuales = int.tryParse(
-                              textoCupos.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                      int cuposActuales = int.tryParse(partes[0]
+                              .trim()
+                              .replaceAll(RegExp(r'[^0-9]'), '')) ??
                           0;
+
                       if (cuposActuales > 0) {
-                        int nuevosCupos = cuposActuales - 1;
-
                         String nuevaInfoExtra =
-                            '$nuevosCupos Cupos | $textoFecha';
-
-                        transaction.update(
-                            destinoDocRef, {'infoExtra': nuevaInfoExtra});
+                            '${cuposActuales - 1} Cupos | ${partes[1].trim()}';
+                        transaction.update(docDestino.reference,
+                            {'infoExtra': nuevaInfoExtra});
                       }
                     }
                   }
                 });
               }
             } catch (e) {
-              print(
-                  "Error al recuperar la imagen o actualizar los cupos del destino: $e");
+              debugPrint("Error en lógica de destino: $e");
             }
 
-            // 4. Instanciamos la nueva reserva asignándole la imagen real obtenida
+            // 4. Instanciamos la nueva reserva con el operadorId obtenido
             final nuevaReserva = Reserva(
               id: '',
               usuarioId: user?.uid ?? 'anonimo',
@@ -165,10 +165,17 @@ class _HomePageState extends State<HomePage> {
               precioTotal: double.tryParse(totalValue) ?? 0.0,
               fechaCompra: DateTime.now(),
               urlImagen: imagenDelDestino,
+              operadorId: operadorIdDelDestino,
+              completa: false,
             );
 
             // 5. Guardar en Firebase de una vez
-            await _reservaService.registrarReserva(nuevaReserva);
+            await FirebaseFirestore.instance.collection('reservas').add({
+              ...nuevaReserva.toMap(),
+              'estado': 'Pagada',
+              'operadorId': operadorIdDelDestino,
+              'precio': double.tryParse(totalValue) ?? 0.0,
+            });
 
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -329,111 +336,105 @@ class HorizontalCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 350,
+      height: 400, // Altura para quepa el nuevo boton
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('destinos').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return const Center(
-              child: Text('Error al cargar los destinos.'),
-            );
+                child: CircularProgressIndicator(color: Color(0xFF2E7D32)));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
-              child: Text(
-                isAccommodation
-                    ? 'No hay alojamientos disponibles aún.'
-                    : 'No hay paquetes disponibles aún.',
-                style: const TextStyle(color: Colors.grey),
-              ),
-            );
+                child: Text(isAccommodation
+                    ? 'No hay alojamientos.'
+                    : 'No hay paquetes.'));
           }
 
-          // 2. Obtenemos la lista completa de documentos de la base de datos
-          final todosLosDestinos = snapshot.data!.docs;
+          // Filtramos primero
+          final todosLosDestinos = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final String categoria = data['categoria'] ?? '';
+            final String infoExtra = data['infoExtra'] ?? '';
 
-          // 3. FILTRAMOS EN FLUTTER: Aplicamos tu lógica de descarte y control de cupos agotados
-          final destinos = todosLosDestinos.where((doc) {
-            final destinoData = doc.data() as Map<String, dynamic>;
-            final String categoria = destinoData['categoria'] ?? '';
-            final String infoExtra = destinoData['infoExtra'] ?? '';
-
-            int cuposDisponibles = 1;
+            int cupos = 1;
             if (infoExtra.contains('|')) {
-              String textoCupos = infoExtra.split('|')[0];
-              cuposDisponibles =
-                  int.tryParse(textoCupos.replaceAll(RegExp(r'[^0-9]'), '')) ??
-                      0;
+              cupos = int.tryParse(infoExtra
+                      .split('|')[0]
+                      .replaceAll(RegExp(r'[^0-9]'), '')) ??
+                  0;
             }
+            if (cupos <= 0) return false;
 
-            if (cuposDisponibles <= 0) return false;
-
-            if (isAccommodation) {
-              return categoria == 'Alojamientos';
-            } else {
-              return categoria != 'Alojamientos';
-            }
+            return isAccommodation
+                ? categoria == 'Alojamientos'
+                : categoria != 'Alojamientos';
           }).toList();
 
-          // 4. Validación: Si después de filtrar la lista quedó vacía
-          if (destinos.isEmpty) {
+          if (todosLosDestinos.isEmpty) {
             return Center(
-              child: Text(
-                isAccommodation
-                    ? 'No hay alojamientos disponibles aún.'
-                    : 'No hay paquetes disponibles aún.',
-                style: const TextStyle(color: Colors.grey),
-              ),
-            );
+                child: Text(isAccommodation
+                    ? 'No hay alojamientos disponibles.'
+                    : 'No hay paquetes disponibles.'));
           }
 
-          // 5. Construimos la lista con los resultados filtrados
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: destinos.length,
-            itemBuilder: (context, index) {
-              final destinoData =
-                  destinos[index].data() as Map<String, dynamic>;
+          final destinosParaMostrar = todosLosDestinos.take(6).toList();
 
-              final String titulo = destinoData['nombre'] ?? 'Sin título';
-              final String ubicacion =
-                  destinoData['ubicacion'] ?? 'Ubicación desconocida';
-              final String infoExtra = destinoData['infoExtra'] ?? '';
-              final String precio = destinoData['precio']?.toString() ?? '0';
-              final String urlImagen = destinoData['urlImagen'] ??
-                  'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: destinosParaMostrar.length,
+                  itemBuilder: (context, index) {
+                    final data = destinosParaMostrar[index].data()
+                        as Map<String, dynamic>;
 
-              final String tipoPrecio = isAccommodation ? '/noche' : '/persona';
-
-              final List<dynamic> incluyeDynamic =
-                  destinoData['queIncluye'] ?? [];
-              final List<String> incluye =
-                  incluyeDynamic.map((e) => e.toString()).toList();
-
-              // Se retorna el calculador dinámico de reseñas que a su vez renderiza e inyecta los datos al ItemCard
-              return Container(
-                width: 280,
-                margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                child: ItemCardConResenas(
-                  titulo: titulo,
-                  ubicacion: ubicacion,
-                  infoExtra: infoExtra,
-                  precio: precio,
-                  tipoPrecio: tipoPrecio,
-                  categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
-                  rutaImagen: urlImagen,
-                  destinoData: destinoData,
-                  incluye: incluye,
+                    return Container(
+                      width: 280,
+                      margin: const EdgeInsets.only(right: 16.0),
+                      child: ItemCardConResenas(
+                        titulo: data['nombre'] ?? 'Sin título',
+                        ubicacion: data['ubicacion'] ?? 'Ubicación desconocida',
+                        infoExtra: data['infoExtra'] ?? '',
+                        precio: data['precio']?.toString() ?? '0',
+                        tipoPrecio: isAccommodation ? '/noche' : '/persona',
+                        categoria: isAccommodation ? 'Alojamiento' : 'Paquete',
+                        rutaImagen: data['urlImagen'] ?? '',
+                        destinoData: data,
+                        incluye: (data['queIncluye'] as List<dynamic>?)
+                                ?.map((e) => e.toString())
+                                .toList() ??
+                            [],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const BuscarPage()),
+                    );
+                  },
+                  child: Text(
+                    isAccommodation
+                        ? 'Ver todos los alojamientos'
+                        : 'Ver todos los paquetes',
+                    style: const TextStyle(
+                      color: Color(0xFF2E7D32),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

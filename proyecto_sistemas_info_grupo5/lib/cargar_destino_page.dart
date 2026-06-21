@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
@@ -144,7 +145,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
       String cuposIngresados = _infoExtraController.text.trim();
       String infoExtraFormateada = '';
 
-      // Normalización estricta de categorías para evitar descalces en el String de Firestore
       String categoriaNormalizada = widget.categoriaInicial;
       if (categoriaNormalizada.contains('Paquete')) {
         categoriaNormalizada = 'Paquetes Turisticos';
@@ -160,15 +160,16 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
         infoExtraFormateada = '$soloNumeroCupos Cupos';
       }
 
+      Timestamp? fechaTimestamp;
       if (_fechaSeleccionada != null) {
         String fechaString =
             '${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}';
         infoExtraFormateada = '$infoExtraFormateada | $fechaString';
+        fechaTimestamp = Timestamp.fromDate(_fechaSeleccionada!);
       } else if (widget.destinoAEditar != null &&
           widget.destinoAEditar!.infoExtra.contains('|')) {
-        String fechaVieja =
-            widget.destinoAEditar!.infoExtra.split('|')[1].trim();
-        infoExtraFormateada = '$infoExtraFormateada | $fechaVieja';
+        infoExtraFormateada = widget.destinoAEditar!.infoExtra;
+        fechaTimestamp = widget.destinoAEditar!.fechaReserva;
       } else {
         infoExtraFormateada = '$infoExtraFormateada | Fecha por programar';
       }
@@ -184,7 +185,8 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
         infoExtra: infoExtraFormateada,
         queIncluye: incluyeList.isEmpty ? ['Hospedaje o Guía'] : incluyeList,
         estado: _estadoSeleccionado,
-        operadorId: widget.destinoAEditar?.operadorId ?? operadorUid,
+        operadorId: FirebaseAuth.instance.currentUser!.uid,
+        fechaReserva: fechaTimestamp,
       );
 
       if (widget.destinoAEditar != null) {

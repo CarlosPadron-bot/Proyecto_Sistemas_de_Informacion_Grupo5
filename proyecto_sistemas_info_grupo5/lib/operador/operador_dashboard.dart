@@ -42,14 +42,14 @@ class OperadorDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tus Paquetes Publicados',
+                    'Paquetes Destacados',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 12),
                   HorizontalCarousel(isAccommodation: false),
                   SizedBox(height: 24),
                   Text(
-                    'Tus Alojamientos',
+                    'Alojamientos Económicos',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 12),

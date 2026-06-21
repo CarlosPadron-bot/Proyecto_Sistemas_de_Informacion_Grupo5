@@ -145,6 +145,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
               precioTotal: totalCalculado,
               fechaCompra: DateTime.now(),
               urlImagen: widget.imageUrl,
+              operadorId: '',
             );
 
             await _reservaService.registrarReserva(nuevaReserva);

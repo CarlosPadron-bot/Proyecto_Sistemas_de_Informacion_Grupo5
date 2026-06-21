@@ -19,12 +19,90 @@ class PanelOperador extends StatefulWidget {
 }
 
 class _PanelOperadorState extends State<PanelOperador> {
+  Future<void> _migrarDatosExistentes() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final destinosSnapshot = await FirebaseFirestore.instance
+        .collection('destinos')
+        .where('operadorId', isNull: true)
+        .get();
+
+    for (var doc in destinosSnapshot.docs) {
+      await doc.reference.update({'operadorId': user.uid});
+      debugPrint("DEBUG: Destino ${doc.id} migrado a ${user.uid}");
+    }
+
+    final reservasSnapshot = await FirebaseFirestore.instance
+        .collection('reservas')
+        .where('operadorId', isNull: true)
+        .get();
+
+    for (var doc in reservasSnapshot.docs) {
+      await doc.reference.update({'operadorId': user.uid});
+      debugPrint("DEBUG: Reserva ${doc.id} migrada a ${user.uid}");
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _migrarDatosExistentes();
+  }
+
   int _selectedIndex = 0;
   final DestinoService _destinoService = DestinoService();
   final ResenaService _resenaService = ResenaService();
 
+  final String _operadorUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
   // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
-  void _confirmarEliminacion(Destino destino) {
+  void _confirmarEliminacion(Destino destino) async {
+    // 1. Mostrar indicador de carga mientras verificamos
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // 2. Verificar si existen reservas para este destino
+    final reservasSnapshot = await FirebaseFirestore.instance
+        .collection('reservas')
+        .where('destinoNombre', isEqualTo: destino.nombre)
+        .limit(1) // Solo necesitamos saber si existe al menos una
+        .get();
+
+    // 3. Cerrar el indicador de carga
+    Navigator.pop(context);
+
+    // 4. Si hay reservas, mostrar el aviso de bloqueo
+    if (reservasSnapshot.docs.isNotEmpty) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Acción no permitida',
+                style: TextStyle(color: Colors.orange)),
+            content: const Text(
+              'Este destino no se puede eliminar porque un usuario ya hizo una reserva.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    // 5. Si no hay reservas, procedemos con el diálogo de confirmación original
+    _mostrarConfirmacionFinal(destino);
+  }
+
+  void _mostrarConfirmacionFinal(Destino destino) {
     showDialog(
       context: context,
       builder: (context) {
@@ -41,7 +119,7 @@ class _PanelOperadorState extends State<PanelOperador> {
             ],
           ),
           content: Text(
-            '¿Estás seguro de que deseas eliminar el servicio "${destino.nombre}"?\n\nEsta acción no es recuperable y se borrará permanentemente de la plataforma.',
+            '¿Estás seguro de que deseas eliminar el servicio "${destino.nombre}"?\n\nEsta acción no es recuperable.',
             style: const TextStyle(fontSize: 16),
           ),
           actions: [
@@ -54,20 +132,8 @@ class _PanelOperadorState extends State<PanelOperador> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
                 Navigator.pop(context);
-
-                if (destino.id == null || destino.id!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            'Error: Este destino no tiene un ID válido asignado.'),
-                        backgroundColor: Colors.red),
-                  );
-                  return;
-                }
-
                 try {
                   await _destinoService.eliminarDestino(destino.id!);
-
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -111,7 +177,6 @@ class _PanelOperadorState extends State<PanelOperador> {
     });
   }
 
-  // VALIDACIÓN DE PERMISOS ANTES DE CREAR NUEVO SERVICIO
   Future<void> _verificarPermisosYNavegar(String categoria) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -263,15 +328,13 @@ class _PanelOperadorState extends State<PanelOperador> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SeccionTarjetasInfo(),
+        SeccionTarjetasInfo(operadorId: _operadorUid),
         const SizedBox(height: 20),
-        const Row(
-          children: [
-            Expanded(child: GraficoPrecios()),
-            SizedBox(width: 20),
-            Expanded(child: GraficoEstados()),
-          ],
-        ),
+        const Row(children: [
+          Expanded(child: GraficoPrecios()),
+          SizedBox(width: 20),
+          Expanded(child: GraficoEstados())
+        ]),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -279,10 +342,9 @@ class _PanelOperadorState extends State<PanelOperador> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -298,11 +360,24 @@ class _PanelOperadorState extends State<PanelOperador> {
                                 .collection('reservas')
                                 .snapshots(),
                             builder: (context, snapshot) {
-                              String totalReservas = snapshot.hasData
-                                  ? snapshot.data!.docs.length.toString()
-                                  : '0';
+                              if (!snapshot.hasData)
+                                return const Text("Cargando...");
+
+                              debugPrint(
+                                  "Total de reservas en BD: ${snapshot.data!.docs.length}");
+
+                              final docs = snapshot.data!.docs;
+                              // Filtra manualmente para depurar
+                              final pagadas = docs.where((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                debugPrint(
+                                    "Reserva encontrada: ${data['destinoNombre']} - Operador: ${data['operadorId']}");
+                                return data['estado'] == 'Pagada' ||
+                                    (data['completa'] == false);
+                              }).length;
+
                               return _buildReservaStat(
-                                  totalReservas, 'Pagadas', Colors.green);
+                                  pagadas.toString(), 'Pagadas', Colors.green);
                             },
                           ),
                         ),
@@ -310,12 +385,21 @@ class _PanelOperadorState extends State<PanelOperador> {
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
-                                .collection('resenas')
+                                .collection('reservas')
+                                .where('operadorId', isEqualTo: _operadorUid)
+                                .where('estado', isEqualTo: 'completado')
                                 .snapshots(),
                             builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return _buildReservaStat(
+                                    '...', 'Completadas', Colors.purple);
+                              }
+
                               String totalCompletadas = snapshot.hasData
                                   ? snapshot.data!.docs.length.toString()
                                   : '0';
+
                               return _buildReservaStat(totalCompletadas,
                                   'Completadas', Colors.purple);
                             },
@@ -396,9 +480,10 @@ class _PanelOperadorState extends State<PanelOperador> {
                     child: Text('Error: ${snapshot.error}'));
               }
 
-              final destinos = snapshot.data
-                      ?.where((d) => d.categoria == categoria)
-                      .toList() ??
+              final destinos = snapshot.data?.where((d) {
+                    return d.categoria == categoria &&
+                        d.operadorId == _operadorUid;
+                  }).toList() ??
                   [];
 
               if (destinos.isEmpty) {
@@ -557,42 +642,24 @@ class _PanelOperadorState extends State<PanelOperador> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Reseñas e Historial de Clientes',
+        const Text('Reseñas de mis servicios',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
-        StreamBuilder<List<Resena>>(
-          stream: _resenaService.obtenerTodasLasResenas(),
+        FutureBuilder<List<Resena>>(
+          future: _cargarResenasFiltradas(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: Color(0xFF009933)),
-                ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text('Error al cargar reseñas: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)),
-                ),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             final listaResenas = snapshot.data ?? [];
 
             if (listaResenas.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: Text(
-                    'Tu plataforma aún no cuenta con comentarios de clientes.',
-                    style: TextStyle(color: Colors.grey, fontSize: 15),
-                  ),
-                ),
+              return const Padding(
+                padding: EdgeInsets.all(40.0),
+                child: Center(
+                    child: Text('Aún no tienes reseñas para tus servicios.',
+                        style: TextStyle(color: Colors.grey))),
               );
             }
 
@@ -601,14 +668,34 @@ class _PanelOperadorState extends State<PanelOperador> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: listaResenas.length,
               itemBuilder: (context, index) {
-                final resena = listaResenas[index];
-                return _buildCardResenaOperador(resena);
+                return _buildCardResenaOperador(listaResenas[index]);
               },
             );
           },
         ),
       ],
     );
+  }
+
+  Future<List<Resena>> _cargarResenasFiltradas() async {
+    final destinosSnapshot = await FirebaseFirestore.instance
+        .collection('destinos')
+        .where('operadorId', isEqualTo: _operadorUid)
+        .get();
+
+    List<String> misDestinosNombres =
+        destinosSnapshot.docs.map((doc) => doc['nombre'] as String).toList();
+
+    if (misDestinosNombres.isEmpty) return [];
+
+    final resenasSnapshot = await FirebaseFirestore.instance
+        .collection('resenas')
+        .where('destinoNombre', whereIn: misDestinosNombres)
+        .get();
+
+    return resenasSnapshot.docs.map((doc) {
+      return Resena.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }).toList();
   }
 
   Widget _buildCardResenaOperador(Resena resena) {
