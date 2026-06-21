@@ -54,12 +54,33 @@ class SeccionTarjetasInfo extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 15),
+                // --- TARJETA MODIFICADA: INGRESOS TOTALES EN TIEMPO REAL ---
                 Expanded(
-                  child: _TarjetaInfo(
-                    titulo: 'Ingresos Totales',
-                    valor: '\$400',
-                    color: colorAmarillo,
-                    icono: Icons.attach_money,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('reservas')
+                        .snapshots(),
+                    builder: (context, reservasSnapshot) {
+                      double ingresosCalculados = 0.0;
+
+                      if (reservasSnapshot.hasData) {
+                        for (var doc in reservasSnapshot.data!.docs) {
+                          var data = doc.data() as Map<String, dynamic>;
+                          // Sumamos el precio total real cobrado en la reserva
+                          ingresosCalculados +=
+                              (data['precioTotal'] ?? 0.0).toDouble();
+                        }
+                      }
+
+                      return _TarjetaInfo(
+                        titulo: 'Ingresos Totales',
+                        // Formateamos el valor dinámicamente con sus decimales o limpio
+                        valor:
+                            '\$${ingresosCalculados.toStringAsFixed(ingresosCalculados % 1 == 0 ? 0 : 2)}',
+                        color: colorAmarillo,
+                        icono: Icons.attach_money,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -88,6 +109,7 @@ class SeccionTarjetasInfo extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 15),
+                // TARJETA: USUARIOS QUE HAN COMPRADO
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
