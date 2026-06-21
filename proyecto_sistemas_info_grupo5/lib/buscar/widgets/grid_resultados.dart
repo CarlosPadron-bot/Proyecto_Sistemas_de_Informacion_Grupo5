@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/DetalleDestinoPage.dart';
-<<<<<<< HEAD
-import 'package:proyecto_sistemas_info_grupo5/homepage/widgets/item_card.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
-=======
-import '../../modelos/destino_model.dart';
 import 'dart:convert';
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
 
 class GridResultados extends StatelessWidget {
   final String categoriaFiltro; 
@@ -29,24 +24,22 @@ class GridResultados extends StatelessWidget {
       stream: FirebaseFirestore.instance.collection('destinos').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF009933)));
+          // CORRECCIÓN CONST: Quitamos el const inválido
+          return Center(
+              child: const CircularProgressIndicator(color: Color(0xFF009933)));
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-              child: Text('No hay destinos publicados por el momento.'));
+          // CORRECCIÓN CONST: Quitamos el const inválido
+          return Center(
+              child: const Text('No hay destinos publicados por el momento.'));
         }
 
         List<Destino> listaDestinos = snapshot.data!.docs.map((doc) {
-<<<<<<< HEAD
+          // =========================================================
+          // 🛠️ ¡SOLUCIÓN AQUÍ!: Le pasamos el 'doc' directo y completo
+          // =========================================================
           return Destino.fromFirestore(doc);
-        }).toList();
-
-        List<Destino> resultadosFiltrados = listaDestinos.where((destino) {
-=======
-          return Destino.fromFirestore(
-              doc.id, doc.data() as Map<String, dynamic>);
         }).toList();
 
         List<Destino> resultadosFiltrados = listaDestinos.where((destino) {
@@ -60,7 +53,6 @@ class GridResultados extends StatelessWidget {
           if (cuposDisponibles <= 0) return false;
 
           // Filtro por Categoría
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
           bool cumpleCategoria = true;
           if (categoriaFiltro != 'Todo') {
             String catNormalizada = (categoriaFiltro == 'Paquetes Turisticos' ||
@@ -78,13 +70,10 @@ class GridResultados extends StatelessWidget {
         }).toList();
 
         if (resultadosFiltrados.isEmpty) {
-          return const Center(
-<<<<<<< HEAD
-            child: Text('No se encontraron destinos que coincidan con los filtros.'),
-=======
-            child: Text(
+          // CORRECCIÓN CONST: Quitamos el const inválido
+          return Center(
+            child: const Text(
                 'No se encontraron destinos que coincidan con los filtros aplicados.'),
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
           );
         }
 
@@ -93,50 +82,14 @@ class GridResultados extends StatelessWidget {
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-<<<<<<< HEAD
-            childAspectRatio: 0.78, 
-=======
             childAspectRatio: 0.82,
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
           ),
           itemCount: resultadosFiltrados.length,
           itemBuilder: (context, index) {
             final destino = resultadosFiltrados[index];
-            final List<String> incluye = destino.queIncluye;
             final String tipoPrecio = destino.categoria == 'Alojamientos' ? '/noche' : '/persona';
 
-<<<<<<< HEAD
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetalleDestinoPage(
-                      title: destino.nombre,
-                      location: destino.ubicacion,
-                      price: destino.precio.toString(),
-                      priceSuffix: tipoPrecio, 
-                      rating: destino.calificacion.toString(), 
-                      reviewCount: '0', 
-                      imageUrl: destino.urlImagen, 
-                      description: destino.descripcion,
-                      includes: incluye, 
-                    ),
-                  ),
-                );
-              },
-              child: ItemCard(
-                titulo: destino.nombre,
-                ubicacion: destino.ubicacion,
-                infoExtra: destino.infoExtra,
-                precio: destino.precio.toString(),
-                tipoPrecio: tipoPrecio,
-                calificacion: destino.calificacion,
-                resenas: 0,
-                categoria: destino.categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete',
-                rutaImagen: destino.urlImagen,
-              ),
-=======
+            // Consultar en tiempo real las reseñas para calcular calificaciones reales
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('resenas')
@@ -185,28 +138,22 @@ class GridResultados extends StatelessWidget {
                     ubicacion: destino.ubicacion,
                     infoExtra: destino.infoExtra,
                     precio: destino.precio.toStringAsFixed(0),
-                    tipoPrecio: destino.categoria == 'Alojamientos'
-                        ? '/noche'
-                        : '/persona',
+                    tipoPrecio: tipoPrecio,
                     calificacion: promedioRating,
                     resenas: cantidadResenas,
-                    categoria: destino.categoria == 'Paquetes Turisticos'
+                    categoria: destino.categoria == 'Paquetes Turisticos' || destino.categoria == 'Paquetes'
                         ? 'Paquete'
                         : 'Alojamiento',
                     rutaImagen: destino.urlImagen,
                   ),
                 );
               },
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
             );
           },
         );
       },
     );
   }
-<<<<<<< HEAD
-}
-=======
 }
 
 // ==========================================
@@ -242,10 +189,11 @@ class ItemCard extends StatelessWidget {
           child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey));
     }
 
-    if (ruta.startsWith('base64,')) {
+    if (ruta.startsWith('base64,') || !ruta.startsWith('http')) {
       try {
+        String base64Data = ruta.startsWith('base64,') ? ruta.substring(7) : ruta;
         return Image.memory(
-          base64Decode(ruta.substring(7)),
+          base64Decode(base64Data),
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
@@ -255,8 +203,7 @@ class ItemCard extends StatelessWidget {
         );
       } catch (e) {
         return const Center(
-            child:
-                Icon(Icons.image_not_supported, size: 40, color: Colors.grey));
+            child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey));
       }
     } else {
       return Image.network(
@@ -265,15 +212,13 @@ class ItemCard extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) => const Center(
-            child:
-                Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
+            child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Procesamos el desglose de cupos y fechas para mostrarlo limpiamente abajo
     String cuposTexto = "Cupos variables";
     String fechaTexto = "Fecha flexible";
     if (infoExtra.contains('|')) {
@@ -290,23 +235,19 @@ class ItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // CONTENEDOR DE LA IMAGEN
           Expanded(
             flex: 5,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey[200],
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: _buildImage(rutaImagen),
               ),
             ),
           ),
-          // CONTENIDO DE TEXTO DE LA TARJETA
           Expanded(
             flex: 5,
             child: Padding(
@@ -319,29 +260,25 @@ class ItemCard extends StatelessWidget {
                     titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          size: 14, color: Colors.grey),
+                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           ubicacion,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              const TextStyle(color: Colors.grey, fontSize: 15),
+                          style: const TextStyle(color: Colors.grey, fontSize: 15),
                         ),
                       ),
                     ],
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.people_outline,
-                          size: 15, color: Colors.blueGrey),
+                      const Icon(Icons.people_outline, size: 15, color: Colors.blueGrey),
                       const SizedBox(width: 3),
                       Text(
                         cuposTexto,
@@ -351,16 +288,14 @@ class ItemCard extends StatelessWidget {
                             fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 15, color: Colors.blueGrey),
+                      const Icon(Icons.calendar_today_outlined, size: 15, color: Colors.blueGrey),
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
                           fechaTexto,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: Colors.blueGrey, fontSize: 15),
+                          style: const TextStyle(color: Colors.blueGrey, fontSize: 15),
                         ),
                       ),
                     ],
@@ -380,11 +315,8 @@ class ItemCard extends StatelessWidget {
                           const Icon(Icons.star, color: Colors.amber, size: 14),
                           const SizedBox(width: 2),
                           Text(
-                            resenas == 0
-                                ? '0.0'
-                                : calificacion.toStringAsFixed(1),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15),
+                            resenas == 0 ? '0.0' : calificacion.toStringAsFixed(1),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           Text(
                             ' ($resenas)',
@@ -406,4 +338,3 @@ class ItemCard extends StatelessWidget {
     );
   }
 }
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db

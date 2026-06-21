@@ -11,12 +11,9 @@ class Destino {
   final String infoExtra;
   final List<String> queIncluye;
   final String estado;
-<<<<<<< HEAD
-  final String duracion;       
-  final double calificacion;   
-=======
+  final String duracion;
+  final double calificacion;
   final String operadorId;
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
 
   Destino({
     this.id,
@@ -29,14 +26,12 @@ class Destino {
     required this.infoExtra,
     required this.queIncluye,
     required this.estado,
-<<<<<<< HEAD
-    required this.duracion,    
-    required this.calificacion, 
-=======
+    required this.duracion,
+    required this.calificacion,
     required this.operadorId,
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
   });
 
+  // Factory para leer directamente de un DocumentSnapshot de Firestore
   factory Destino.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Destino(
@@ -45,16 +40,18 @@ class Destino {
       ubicacion: data['ubicacion'] ?? '',
       precio: (data['precio'] ?? 0.0).toDouble(),
       urlImagen: data['urlImagen'] ?? '',
-      categoria: data['categoria'] ?? '',
+      categoria: data['categoria'] ?? 'Paquetes Turísticos',
       descripcion: data['descripcion'] ?? '',
       infoExtra: data['infoExtra'] ?? '',
       queIncluye: List<String>.from(data['queIncluye'] ?? []),
-      estado: data['estado'] ?? 'Caracas',
-      duracion: data['duracion'] ?? 'No definida', 
-      calificacion: (data['calificacion'] ?? 0.0).toDouble(), 
+      estado: data['estado'] ?? 'Otros',
+      duracion: data['duracion'] ?? 'No definida',
+      calificacion: (data['calificacion'] ?? 0.0).toDouble(),
+      operadorId: data['operadorId'] ?? '',
     );
   }
 
+  // Método para convertir a Map y subir/guardar en Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'nombre': nombre,
@@ -66,31 +63,13 @@ class Destino {
       'infoExtra': infoExtra,
       'queIncluye': queIncluye,
       'estado': estado,
-      'duracion': duracion,       
-      'calificacion': calificacion, 
+      'duracion': duracion,
+      'calificacion': calificacion,
+      'operadorId': operadorId,
     };
   }
-<<<<<<< HEAD
-}
-=======
 
-  /// Factory para crear un objeto a partir de un Map (Para LEER de Firestore)
-  factory Destino.fromFirestore(String documentId, Map<String, dynamic> map) {
-    return Destino(
-      id: documentId,
-      nombre: map['nombre'] ?? '',
-      ubicacion: map['ubicacion'] ?? '',
-      precio: (map['precio'] ?? 0.0).toDouble(),
-      descripcion: map['descripcion'] ?? '',
-      urlImagen: map['urlImagen'] ?? '',
-      categoria: map['categoria'] ?? 'Paquetes Turisticos',
-      infoExtra: map['infoExtra'] ?? '',
-      queIncluye: List<String>.from(map['queIncluye'] ?? []),
-      estado: map['estado'] ?? 'Otros',
-      operadorId: map['operadorId'] ?? '',
-    );
-  }
-
+  // Método complementario copyWith por si necesitas modificar instancias clonadas
   Destino copyWith({
     String? id,
     String? nombre,
@@ -102,6 +81,8 @@ class Destino {
     String? infoExtra,
     List<String>? queIncluye,
     String? estado,
+    String? duracion,
+    double? calificacion,
     String? operadorId,
   }) {
     return Destino(
@@ -115,10 +96,9 @@ class Destino {
       infoExtra: infoExtra ?? this.infoExtra,
       queIncluye: queIncluye ?? this.queIncluye,
       estado: estado ?? this.estado,
+      duracion: duracion ?? this.duracion,
+      calificacion: calificacion ?? this.calificacion,
       operadorId: operadorId ?? this.operadorId,
     );
   }
-
-  static fromMap(Map<String, dynamic> data) {}
 }
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db

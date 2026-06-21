@@ -1,21 +1,20 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
-import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
-import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
+import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
 
 class CargarDestinoPage extends StatefulWidget {
   final String categoriaInicial;
   final Destino? destinoAEditar;
 
-  const CargarDestinoPage(
-      {super.key, required this.categoriaInicial, this.destinoAEditar});
+  const CargarDestinoPage({
+    super.key,
+    required this.categoriaInicial,
+    this.destinoAEditar,
+  });
 
   @override
   State<CargarDestinoPage> createState() => _CargarDestinoPageState();
@@ -23,74 +22,48 @@ class CargarDestinoPage extends StatefulWidget {
 
 class _CargarDestinoPageState extends State<CargarDestinoPage> {
   final _formKey = GlobalKey<FormState>();
-  final DestinoService _destinoService = DestinoService();
 
+  // Controladores de texto
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _ubicacionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _infoExtraController = TextEditingController();
-<<<<<<< HEAD
-  final TextEditingController _incluyeController = TextEditingController(); 
-  
-  // Controladores listos para duración y calificación
   final TextEditingController _duracionController = TextEditingController();
-  final TextEditingController _calificacionController = TextEditingController();
-=======
-  final TextEditingController _incluyeController = TextEditingController();
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
+  final TextEditingController _incluyeItemController = TextEditingController();
 
-  String _estadoSeleccionado = 'Caracas';
-  bool _cargando = false;
-  DateTime? _fechaSeleccionada;
+  String _categoriaSeleccionada = 'Paquetes Turísticos';
+  String _estadoSeleccionado = 'Disponible';
+  String _base64Image = '';
+  List<String> _queIncluyeList = [];
+  bool _isLoading = false;
 
-  XFile? _imagenSeleccionada;
-  final ImagePicker _picker = ImagePicker();
-
-  final List<String> _estados = [
-    'Mérida',
-    'Caracas',
-    'Falcón',
-    'Sucre',
-    'Bolívar',
-    'Anzoátegui',
-    'Nueva Esparta',
-    'Otros'
-  ];
-
+  // =========================================================
+  // 🛠️ ¡CORREGIDO!: Ciclo de vida initState estructurado correctamente
+  // =========================================================
   @override
   void initState() {
-    super.initState();
+    super.initState(); // Se ejecuta primero y una sola vez
+    
+    _categoriaSeleccionada = widget.categoriaInicial;
+    
+    // Si estamos editando un destino existente, precargamos los datos
     if (widget.destinoAEditar != null) {
-      _nombreController.text = widget.destinoAEditar!.nombre;
-      _ubicacionController.text = widget.destinoAEditar!.ubicacion;
-      _precioController.text = widget.destinoAEditar!.precio.toString();
-      _descripcionController.text = widget.destinoAEditar!.descripcion;
-      _incluyeController.text = widget.destinoAEditar!.queIncluye.join(', ');
-<<<<<<< HEAD
-      
-      // Ahora que el modelo ya tiene las variables, esto no dará error:
-      _duracionController.text = widget.destinoAEditar!.duracion;
-      _calificacionController.text = widget.destinoAEditar!.calificacion.toString();
-      
-=======
-
-      String infoRaw = widget.destinoAEditar!.infoExtra;
-      if (infoRaw.contains('|')) {
-        String parteCupos = infoRaw.split('|')[0].trim();
-        _infoExtraController.text =
-            parteCupos.replaceAll(RegExp(r'[^0-9]'), '');
-      } else {
-        _infoExtraController.text = infoRaw.replaceAll(RegExp(r'[^0-9]'), '');
-      }
-
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-      if (_estados.contains(widget.destinoAEditar!.estado)) {
-        _estadoSeleccionado = widget.destinoAEditar!.estado;
-      }
+      final d = widget.destinoAEditar!;
+      _nombreController.text = d.nombre;
+      _ubicacionController.text = d.ubicacion;
+      _precioController.text = d.precio.toString();
+      _descripcionController.text = d.descripcion;
+      _infoExtraController.text = d.infoExtra;
+      _duracionController.text = d.duracion;
+      _categoriaSeleccionada = d.categoria;
+      _estadoSeleccionado = d.estado;
+      _base64Image = d.urlImagen;
+      _queIncluyeList = List<String>.from(d.queIncluye);
     }
   }
 
+  // Liberamos memoria de los controladores al destruir el widget
   @override
   void dispose() {
     _nombreController.dispose();
@@ -98,442 +71,333 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
     _precioController.dispose();
     _descripcionController.dispose();
     _infoExtraController.dispose();
-    _incluyeController.dispose();
     _duracionController.dispose();
-    _calificacionController.dispose();
+    _incluyeItemController.dispose();
     super.dispose();
   }
 
+  // FUNCIÓN PARA SELECCIONAR IMAGEN Y CONVERTIRLA A BASE64
   Future<void> _seleccionarImagen() async {
-    final XFile? imagen = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1080,
-    );
-    if (imagen != null) {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+    if (image != null) {
+      final bytes = await image.readAsBytes();
       setState(() {
-        _imagenSeleccionada = imagen;
+        _base64Image = 'data:image/png;base64,${base64Encode(bytes)}';
       });
     }
   }
 
-  Future<Uint8List> _comprimirBytes(Uint8List bytesOriginales) async {
-    try {
-      final Uint8List bytesComprimidos =
-          await FlutterImageCompress.compressWithList(
-        bytesOriginales,
-        minWidth: 800,
-        minHeight: 600,
-        quality: 75,
-        format: CompressFormat.jpeg,
-      );
-      return bytesComprimidos;
-    } catch (e) {
-      debugPrint("Error en compresión avanzada: $e");
-      return bytesOriginales;
+  // ACCIÓN DE AGREGAR ITEM A LA LISTA "QUÉ INCLUYE"
+  void _agregarIncluyeItem() {
+    final texto = _incluyeItemController.text.trim();
+    if (texto.isNotEmpty) {
+      setState(() {
+        _queIncluyeList.add(texto);
+        _incluyeItemController.clear();
+      });
     }
   }
 
-  void _publicarDestino() async {
+  // FUNCIÓN PRINCIPAL PARA GUARDAR O ACTUALIZAR EN FIRESTORE
+  Future<void> _guardarDestino() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final String? operadorUid = FirebaseAuth.instance.currentUser?.uid;
-    if (operadorUid == null || operadorUid.isEmpty) {
+    if (_base64Image.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Error: No se encontró una sesión de operador activa.'),
-            backgroundColor: Colors.red),
+        const SnackBar(content: Text('Por favor, selecciona una imagen para el servicio.'), backgroundColor: Colors.orange),
       );
       return;
     }
 
-    setState(() => _cargando = true);
-
-    List<String> incluyeList = _incluyeController.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    setState(() => _isLoading = true);
 
     try {
-<<<<<<< HEAD
-      double precioDouble = double.tryParse(_precioController.text.trim()) ?? 0.0;
-      double calificacionDouble = double.tryParse(_calificacionController.text.trim()) ?? 0.0;
+      final user = FirebaseAuth.instance.currentUser;
+      final String uidOperador = user?.uid ?? '';
 
-      String imagenBase64 = widget.destinoAEditar?.urlImagen ?? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7'; 
-=======
-      double precioDouble =
-          double.tryParse(_precioController.text.trim()) ?? 0.0;
-
-      String imagenBase64 = widget.destinoAEditar?.urlImagen ??
-          'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-
-      if (_imagenSeleccionada != null) {
-        final bytesOriginales = await _imagenSeleccionada!.readAsBytes();
-        final bytesOptimizados = await _comprimirBytes(bytesOriginales);
-        String base64String = base64Encode(bytesOptimizados);
-        imagenBase64 = 'base64,$base64String';
-      }
-
-      String cuposIngresados = _infoExtraController.text.trim();
-      String infoExtraFormateada = '';
-
-      // Normalización estricta de categorías para evitar descalces en el String de Firestore
-      String categoriaNormalizada = widget.categoriaInicial;
-      if (categoriaNormalizada.contains('Paquete')) {
-        categoriaNormalizada = 'Paquetes Turisticos';
-      }
-
-      if (cuposIngresados.isEmpty) {
-        infoExtraFormateada = (categoriaNormalizada == 'Alojamientos'
-            ? 'Por noche'
-            : 'Cupos limitados');
-      } else {
-        String soloNumeroCupos =
-            cuposIngresados.replaceAll(RegExp(r'[^0-9]'), '');
-        infoExtraFormateada = '$soloNumeroCupos Cupos';
-      }
-
-      if (_fechaSeleccionada != null) {
-        String fechaString =
-            '${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}';
-        infoExtraFormateada = '$infoExtraFormateada | $fechaString';
-      } else if (widget.destinoAEditar != null &&
-          widget.destinoAEditar!.infoExtra.contains('|')) {
-        String fechaVieja =
-            widget.destinoAEditar!.infoExtra.split('|')[1].trim();
-        infoExtraFormateada = '$infoExtraFormateada | $fechaVieja';
-      } else {
-        infoExtraFormateada = '$infoExtraFormateada | Fecha por programar';
-      }
-
-      Destino nuevoDestino = Destino(
-<<<<<<< HEAD
+      // Creamos la instancia estructurada del objeto Destino
+      final nuevoDestino = Destino(
         id: widget.destinoAEditar?.id, 
-=======
-        id: widget.destinoAEditar?.id,
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
         nombre: _nombreController.text.trim(),
         ubicacion: _ubicacionController.text.trim(),
-        precio: precioDouble,
+        precio: double.parse(_precioController.text.trim()),
+        urlImagen: _base64Image,
+        categoria: _categoriaSeleccionada,
         descripcion: _descripcionController.text.trim(),
-        urlImagen: imagenBase64,
-        categoria: categoriaNormalizada,
-        infoExtra: infoExtraFormateada,
-        queIncluye: incluyeList.isEmpty ? ['Hospedaje o Guía'] : incluyeList,
+        infoExtra: _infoExtraController.text.trim(),
+        queIncluye: _queIncluyeList,
         estado: _estadoSeleccionado,
-<<<<<<< HEAD
-        duracion: _duracionController.text.trim().isEmpty ? 'No definida' : _duracionController.text.trim(),
-        calificacion: calificacionDouble,
+        duracion: _duracionController.text.trim().isNotEmpty ? _duracionController.text.trim() : 'No definida',
+        calificacion: widget.destinoAEditar?.calificacion ?? 5.0, 
+        operadorId: widget.destinoAEditar?.operadorId ?? uidOperador, 
       );
 
-      if (widget.destinoAEditar != null) {
-        await _destinoService.actualizarDestino(nuevoDestino); 
-=======
-        operadorId: widget.destinoAEditar?.operadorId ?? operadorUid,
-      );
-
-      if (widget.destinoAEditar != null) {
-        await _destinoService.actualizarDestino(nuevoDestino);
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
+      if (widget.destinoAEditar == null) {
+        // OPERACIÓN: CREAR NUEVO
+        await FirebaseFirestore.instance.collection('destinos').add(nuevoDestino.toFirestore());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Servicio publicado con éxito.'), backgroundColor: Colors.green),
+          );
+        }
       } else {
-        await _destinoService.guardarDestino(nuevoDestino);
+        // OPERACIÓN: EDITAR EXISTENTE
+        await FirebaseFirestore.instance
+            .collection('destinos')
+            .doc(widget.destinoAEditar!.id)
+            .update(nuevoDestino.toFirestore());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Servicio actualizado con éxito.'), backgroundColor: Colors.blue),
+          );
+        }
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(widget.destinoAEditar != null
-                  ? '¡Servicio actualizado con éxito!'
-                  : '¡Servicio turístico publicado con éxito!'),
-              backgroundColor: Colors.green),
-        );
-        Navigator.pop(context);
-      }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error al guardar el servicio: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
-      if (mounted) setState(() => _cargando = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool esEdicion = widget.destinoAEditar != null;
+    final bool esEdicion = widget.destinoAEditar != null;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: const CustomHeader(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${esEdicion ? 'Editar' : 'Publicar'} ${widget.categoriaInicial == 'Alojamientos' ? 'Alojamiento' : 'Paquete Turístico'}',
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                    labelText: 'Título del destino / hospedaje',
-                    border: OutlineInputBorder()),
-                validator: (value) => (value == null || value.isEmpty)
-                    ? 'Ingrese el título'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _ubicacionController,
-                      decoration: const InputDecoration(
-                          labelText: 'Ubicación específica (Ej: Chichiriviche)',
-                          border: OutlineInputBorder()),
-                      validator: (value) => (value == null || value.isEmpty)
-                          ? 'Ingrese la ubicación'
-                          : null,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF009933)))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 30.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      esEdicion ? 'Editar Servicio' : 'Publicar Nuevo Servicio',
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _estadoSeleccionado,
-                      decoration: const InputDecoration(
-                          labelText: 'Estado político',
-                          border: OutlineInputBorder()),
-                      items: _estados
-                          .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
-                      onChanged: (val) =>
-                          setState(() => _estadoSeleccionado = val!),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _precioController,
-                      decoration: const InputDecoration(
-                          labelText: 'Precio (\$ USD)',
-                          border: OutlineInputBorder(),
-                          prefixText: '\$ '),
-                      keyboardType: TextInputType.number,
-                      validator: (value) => double.tryParse(value ?? '') == null
-                          ? 'Precio inválido'
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Row(
+                    const Text('Completa los campos informativos para actualizar la plataforma.', style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 30),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // COLUMNA IZQUIERDA: FORMULARIO
                         Expanded(
                           flex: 2,
-                          child: TextFormField(
-                            controller: _infoExtraController,
-                            decoration: const InputDecoration(
-                                hintText: 'Solo números',
-                                labelText: 'Cupos disponibles',
-                                border: OutlineInputBorder()),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly
+                          child: Column(
+                            children: [
+                              _buildTextField('Nombre del servicio o destino', _nombreController, Icons.title),
+                              const SizedBox(height: 15),
+                              _buildTextField('Ubicación exacta', _ubicacionController, Icons.location_on_outlined),
+                              const SizedBox(height: 15),
+                              Row(
+                                children: [
+                                  Expanded(child: _buildTextField('Precio (\$ USD)', _precioController, Icons.attach_money, isNumber: true)),
+                                  const SizedBox(width: 15),
+                                  Expanded(child: _buildTextField('Duración (Ej: 3 días / Por Noche)', _duracionController, Icons.timer_outlined)),
+                                ],
+                              ),
+                              const SizedBox(height: 15),
+                              _buildTextField('Descripción general', _descripcionController, Icons.description_outlined, maxLines: 3),
+                              const SizedBox(height: 15),
+                              _buildTextField('Información extra / Requisitos', _infoExtraController, Icons.assignment_outlined, maxLines: 2),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 40),
+
+                        // COLUMNA DERECHA: IMAGEN, CATEGORÍA Y ADICIONALES
                         Expanded(
-                          flex: 3,
-                          child: SizedBox(
-                            height: 56,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4)),
-                                side: BorderSide(color: Colors.grey[600]!),
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Categoría del Servicio', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 5),
+                              DropdownButtonFormField<String>(
+                                value: _categoriaSeleccionada,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'Paquetes Turísticos', child: Text('Paquetes Turísticos')),
+                                  DropdownMenuItem(value: 'Alojamientos', child: Text('Alojamientos')),
+                                ],
+                                onChanged: (value) => setState(() => _categoriaSeleccionada = value!),
                               ),
-                              onPressed: () async {
-                                final DateTime? picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: DateTime.now(),
-                                  firstDate: DateTime.now(),
-                                  lastDate: DateTime(2101),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    _fechaSeleccionada = picked;
-                                  });
-                                }
-                              },
-                              child: Text(
-                                _fechaSeleccionada == null
-                                    ? 'Selecciona la fecha de tu experiencia'
-                                    : 'Fecha: ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold),
+                              const SizedBox(height: 20),
+
+                              const Text('Estado de Visibilidad', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 5),
+                              DropdownButtonFormField<String>(
+                                value: _estadoSeleccionado,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'Disponible', child: Text('Disponible')),
+                                  DropdownMenuItem(value: 'Agotado', child: Text('Agotado')),
+                                  DropdownMenuItem(value: 'Mantenimiento', child: Text('Mantenimiento')),
+                                ],
+                                onChanged: (value) => setState(() => _estadoSeleccionado = value!),
                               ),
-                            ),
+                              const SizedBox(height: 25),
+
+                              const Text('Imagen de Portada', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: _seleccionarImagen,
+                                child: Container(
+                                  height: 140,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: _base64Image.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.memory(
+                                            base64Decode(_base64Image.contains(',') ? _base64Image.split(',')[1] : _base64Image),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : const Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.grey),
+                                            SizedBox(height: 5),
+                                            Text('Presiona para subir imagen', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _duracionController,
-                      decoration: const InputDecoration(
-                          labelText: 'Duración (Ej: 3 días / 2 noches)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.timer_outlined)),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese la duración' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _calificacionController,
-                      decoration: const InputDecoration(
-                          labelText: 'Calificación inicial (0.0 - 5.0)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.star_border)),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Ingrese la calificación';
-                        final val = double.tryParse(value);
-                        if (val == null || val < 0.0 || val > 5.0) {
-                          return 'Debe ser entre 0.0 y 5.0';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _incluyeController,
-                decoration: const InputDecoration(
-                    labelText:
-                        '¿Qué incluye? (Separa los elementos por comas ",")',
-                    border: OutlineInputBorder(),
-                    hintText: 'Traslado, Almuerzos, Paseo en lancha'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descripcionController,
-                decoration: const InputDecoration(
-                    labelText: 'Descripción detallada de la experiencia',
-                    border: OutlineInputBorder()),
-                maxLines: 4,
-                validator: (value) => (value == null || value.isEmpty)
-                    ? 'Ingrese una descripción'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                esEdicion
-                    ? 'Actualizar imagen de portada (Opcional)'
-                    : 'Imagen de portada',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _seleccionarImagen,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    border: Border.all(color: Colors.grey[400]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: _imagenSeleccionada == null
-<<<<<<< HEAD
-                      ? (esEdicion && widget.destinoAEditar!.urlImagen.startsWith('base64,'))
-=======
-                      ? (esEdicion &&
-                              widget.destinoAEditar!.urlImagen
-                                  .startsWith('base64,'))
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.memory(
-                                base64Decode(widget.destinoAEditar!.urlImagen
-                                    .split(',')[1]),
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_photo_alternate_outlined,
-                                    size: 50, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text('Haz clic para subir una imagen',
-                                    style: TextStyle(color: Colors.grey)),
-                              ],
-                            )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: kIsWeb
-                              ? Image.network(_imagenSeleccionada!.path,
-                                  fit: BoxFit.cover)
-                              : Image.file(File(_imagenSeleccionada!.path),
-                                  fit: BoxFit.cover),
+
+                    const SizedBox(height: 25),
+                    const Divider(),
+                    const SizedBox(height: 15),
+
+                    const Text('¿Qué incluye este servicio? (Items individuales)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _incluyeItemController,
+                            decoration: InputDecoration(
+                              hintText: 'Ej: Guía bilingüe, Desayuno buffet, Traslado ida y vuelta...',
+                              prefixIcon: const Icon(Icons.add_task_rounded),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 15),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: _agregarIncluyeItem,
+                          child: const Text('Agregar', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _queIncluyeList.map((item) {
+                        return Chip(
+                          backgroundColor: Colors.green.shade50,
+                          side: BorderSide(color: Colors.green.shade200),
+                          label: Text(item, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                          deleteIcon: const Icon(Icons.cancel, size: 16, color: Colors.green),
+                          onDeleted: () {
+                            setState(() {
+                              _queIncluyeList.remove(item);
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                        ),
+                        const SizedBox(width: 15),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF009933),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: _guardarDestino,
+                          child: Text(
+                            esEdicion ? 'Actualizar Cambios' : 'Publicar Servicio',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF009933)),
-                  onPressed: _cargando ? null : _publicarDestino,
-                  child: _cargando
-                      ? const CircularProgressIndicator(color: Colors.white)
-<<<<<<< HEAD
-                      : Text(esEdicion ? 'ACTUALIZAR CAMBIOS' : 'PUBLICAR AHORA',
-=======
-                      : Text(
-                          esEdicion ? 'ACTUALIZAR CAMBIOS' : 'PUBLICAR AHORA',
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool isNumber = false, int maxLines = 1}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.grey[50],
       ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Este campo es obligatorio';
+        }
+        if (isNumber && double.tryParse(value.trim()) == null) {
+          return 'Ingresa un valor numérico válido';
+        }
+        return null;
+      },
     );
   }
 }

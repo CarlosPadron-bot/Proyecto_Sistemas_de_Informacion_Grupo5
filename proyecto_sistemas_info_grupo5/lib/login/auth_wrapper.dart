@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Asegúrate de tener este import
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/login_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
+
+// Nota: Mantengo los imports por si acaso, aunque ahora la navegación a estos 
+// paneles se hará desde los botones del menú superior (Header)
 import 'package:proyecto_sistemas_info_grupo5/operador/operador_dashboard.dart';
 import 'package:proyecto_sistemas_info_grupo5/admin/admin_dashboard.dart';
 
@@ -44,25 +47,17 @@ class AuthWrapper extends StatelessWidget {
               }
 
               // ¡ELIMINACIÓN EN TIEMPO REAL! 
-              // Si el administrador eliminó al usuario de la base de datos (el documento ya no existe):
               if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                // Forzamos el cierre de sesión en Firebase Auth para limpiar los tokens locales
                 FirebaseAuth.instance.signOut(); 
-                return const LoginScreen(); // Lo saca inmediatamente a la pantalla de Login
+                return const LoginScreen(); 
               }
 
-              // Si el usuario existe de forma correcta, extraemos sus datos
-              final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-              String rolNormalizado = (userData?['rol'] ?? 'viajero').toString().toLowerCase();
-
-              // Decidimos a qué Dashboard enviarlo según el rol con el que se registró
-              if (rolNormalizado == 'admin') {
-                return const AdminDashboard();
-              } else if (rolNormalizado == 'operador') {
-                return const OperadorDashboard();
-              } else {
-                return const HomePage(); // Viajero
-              }
+              // ============================================================
+              // 🟩 EL CAMBIO EXACTO:
+              // Independientemente de si el rol es admin, operador o viajero,
+              // todos los usuarios activos van directo a la pantalla de inicio.
+              // ============================================================
+              return const HomePage(); 
             },
           );
         }

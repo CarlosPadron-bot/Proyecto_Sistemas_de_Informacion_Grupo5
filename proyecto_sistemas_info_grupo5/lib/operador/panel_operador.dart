@@ -21,13 +21,9 @@ class PanelOperador extends StatefulWidget {
 class _PanelOperadorState extends State<PanelOperador> {
   int _selectedIndex = 0;
   final DestinoService _destinoService = DestinoService();
-<<<<<<< HEAD
-  final ResenaService _resenaService = ResenaService(); // Instanciamos el servicio
-=======
   final ResenaService _resenaService = ResenaService();
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
 
-  // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
+  // FUNCIÓN PARA EL POPUP DE ELIMINAR
   void _confirmarEliminacion(Destino destino) {
     showDialog(
       context: context,
@@ -38,9 +34,10 @@ class _PanelOperadorState extends State<PanelOperador> {
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
               SizedBox(width: 10),
-              Text('Eliminar Servicio',
-                  style: TextStyle(
-                      color: Colors.red, fontWeight: FontWeight.bold)),
+              Text(
+                'Eliminar Servicio',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: Text(
@@ -50,8 +47,7 @@ class _PanelOperadorState extends State<PanelOperador> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.grey, fontSize: 16)),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey, fontSize: 16)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -61,9 +57,9 @@ class _PanelOperadorState extends State<PanelOperador> {
                 if (destino.id == null || destino.id!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text(
-                            'Error: Este destino no tiene un ID válido asignado.'),
-                        backgroundColor: Colors.red),
+                      content: Text('Error: Este destino no tiene un ID válido asignado.'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                   return;
                 }
@@ -74,8 +70,9 @@ class _PanelOperadorState extends State<PanelOperador> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('Servicio eliminado con éxito'),
-                          backgroundColor: Colors.red),
+                        content: Text('Servicio eliminado con éxito'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                     setState(() {});
                   }
@@ -83,15 +80,17 @@ class _PanelOperadorState extends State<PanelOperador> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Error al eliminar: $e'),
-                          backgroundColor: Colors.red),
+                        content: Text('Error al eliminar: $e'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   }
                 }
               },
-              child: const Text('Sí, eliminar',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Sí, eliminar',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -135,23 +134,21 @@ class _PanelOperadorState extends State<PanelOperador> {
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 title: const Row(
                   children: [
                     Icon(Icons.block, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('Acción denegada',
-                        style: TextStyle(color: Colors.red)),
+                    Text('Acción denegada', style: TextStyle(color: Colors.red)),
                   ],
                 ),
                 content: const Text(
-                    'Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.'),
+                  'Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Entendido',
-                        style: TextStyle(color: Colors.blue)),
+                    child: const Text('Entendido', style: TextStyle(color: Colors.blue)),
                   ),
                 ],
               ),
@@ -163,9 +160,7 @@ class _PanelOperadorState extends State<PanelOperador> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error al verificar cuenta: $e'),
-              backgroundColor: Colors.red),
+          SnackBar(content: Text('Error al verificar cuenta: $e'), backgroundColor: Colors.red),
         );
       }
       return;
@@ -192,18 +187,17 @@ class _PanelOperadorState extends State<PanelOperador> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Panel de Operador',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
+              const Text(
+                'Panel de Operador',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
               const SizedBox(height: 5),
-              const Text('Gestión y análisis de tus servicios y clientes',
-                  style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const Text('Gestión y análisis de tus servicios y clientes', style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 30),
               Container(
                 decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.black12))),
+                  border: Border(bottom: BorderSide(color: Colors.black12)),
+                ),
                 child: Row(
                   children: [
                     _buildTabItem('Dashboard', Icons.show_chart, 0),
@@ -218,10 +212,8 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
               const SizedBox(height: 30),
               if (_selectedIndex == 0) _buildTabDashboard(),
-              if (_selectedIndex == 1)
-                _buildTabServiciosDinamico('Paquetes Turisticos'),
-              if (_selectedIndex == 2)
-                _buildTabServiciosDinamico('Alojamientos'),
+              if (_selectedIndex == 1) _buildTabServiciosDinamico('Paquetes Turísticos'),
+              if (_selectedIndex == 2) _buildTabServiciosDinamico('Alojamientos'),
               if (_selectedIndex == 3) _buildTabResenasDinamicas(),
             ],
           ),
@@ -239,23 +231,22 @@ class _PanelOperadorState extends State<PanelOperador> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-                color:
-                    isSelected ? const Color(0xFF00B14F) : Colors.transparent,
-                width: 3),
+              color: isSelected ? const Color(0xFF00B14F) : Colors.transparent,
+              width: 3,
+            ),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon,
-                size: 18,
-                color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600]),
+            Icon(icon, size: 18, color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600]),
             const SizedBox(width: 8),
-            Text(title,
-                style: TextStyle(
-                    color:
-                        isSelected ? const Color(0xFF00B14F) : Colors.grey[600],
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00B14F) : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ],
         ),
       ),
@@ -289,38 +280,26 @@ class _PanelOperadorState extends State<PanelOperador> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Estado de Reservas',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text('Estado de Reservas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 15),
                     Row(
                       children: [
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('reservas')
-                                .snapshots(),
+                            stream: FirebaseFirestore.instance.collection('reservas').snapshots(),
                             builder: (context, snapshot) {
-                              String totalReservas = snapshot.hasData
-                                  ? snapshot.data!.docs.length.toString()
-                                  : '0';
-                              return _buildReservaStat(
-                                  totalReservas, 'Pagadas', Colors.green);
+                              String totalReservas = snapshot.hasData ? snapshot.data!.docs.length.toString() : '0';
+                              return _buildReservaStat(totalReservas, 'Pagadas', Colors.green);
                             },
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('resenas')
-                                .snapshots(),
+                            stream: FirebaseFirestore.instance.collection('resenas').snapshots(),
                             builder: (context, snapshot) {
-                              String totalCompletadas = snapshot.hasData
-                                  ? snapshot.data!.docs.length.toString()
-                                  : '0';
-                              return _buildReservaStat(totalCompletadas,
-                                  'Completadas', Colors.purple);
+                              String totalCompletadas = snapshot.hasData ? snapshot.data!.docs.length.toString() : '0';
+                              return _buildReservaStat(totalCompletadas, 'Completadas', Colors.purple);
                             },
                           ),
                         ),
@@ -349,51 +328,14 @@ class _PanelOperadorState extends State<PanelOperador> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(numero,
-              style: TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Text(numero, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           Text(texto, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
   }
 
-<<<<<<< HEAD
-  Widget _buildMockCard(String title, IconData icon, Color color) {
-    return Container(
-      height: 220,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const Spacer(),
-          Center(
-            child: Column(
-              children: [
-                Icon(icon, size: 60, color: color.withOpacity(0.5)),
-                const SizedBox(height: 10),
-                const Text('[Área del Gráfico]',
-                    style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  // TABLA DINÁMICA QUE LEE DE FIREBASE (ACTUALIZADA CON DURACIÓN Y CALIFICACIÓN)
-=======
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
+  // TABLA DINÁMICA QUE LEE DE FIREBASE
   Widget _buildTabServiciosDinamico(String categoria) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,21 +343,15 @@ class _PanelOperadorState extends State<PanelOperador> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Gestión de $categoria',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Gestión de $categoria', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
-<<<<<<< HEAD
-              onPressed: () => _verificarPermisosYNavegar(categoria), 
-=======
               onPressed: () => _verificarPermisosYNavegar(categoria),
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
-                  'Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',
-                  style: const TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF009933)),
+                'Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009933)),
             ),
           ],
         ),
@@ -423,34 +359,39 @@ class _PanelOperadorState extends State<PanelOperador> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(8)),
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: StreamBuilder<List<Destino>>(
-            stream: FirebaseFirestore.instance.collection('destinos').snapshots().map((snapshot) => snapshot.docs.map((doc) => Destino.fromFirestore(doc)).toList()),
+            stream: FirebaseFirestore.instance
+                .collection('destinos')
+                .snapshots()
+                .map((snapshot) => snapshot.docs.map((doc) => Destino.fromFirestore(doc)).toList()),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Center(child: CircularProgressIndicator()));
+                  padding: EdgeInsets.all(40),
+                  child: Center(child: CircularProgressIndicator()),
+                );
               }
               if (snapshot.hasError) {
                 return Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text('Error: ${snapshot.error}'));
+                  padding: const EdgeInsets.all(20),
+                  child: Text('Error: ${snapshot.error}'),
+                );
               }
 
-              final destinos = snapshot.data
-                      ?.where((d) => d.categoria == categoria)
-                      .toList() ??
-                  [];
+              final destinos = snapshot.data?.where((d) => d.categoria == categoria).toList() ?? [];
 
               if (destinos.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(40),
                   child: Center(
-                      child: Text(
-                          'Aún no has publicado servicios en esta categoría.',
-                          style: TextStyle(color: Colors.grey))),
+                    child: Text(
+                      'Aún no has publicado servicios en esta categoría.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
                 );
               }
 
@@ -459,25 +400,17 @@ class _PanelOperadorState extends State<PanelOperador> {
                 child: DataTable(
                   dataRowMaxHeight: 85,
                   dataRowMinHeight: 75,
-                  headingTextStyle: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black),
+                  headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                   columns: const [
                     DataColumn(label: Text('Imagen')),
                     DataColumn(label: Text('Nombre')),
                     DataColumn(label: Text('Ubicación')),
                     DataColumn(label: Text('Duración')),
                     DataColumn(label: Text('Precio')),
-<<<<<<< HEAD
-                    DataColumn(label: Text('Duración')),     // NUEVA COLUMNA
-                    DataColumn(label: Text('Calificación')), // NUEVA COLUMNA
-=======
                     DataColumn(label: Text('Calificación')),
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
                     DataColumn(label: Text('Acciones')),
                   ],
-                  rows: destinos
-                      .map((destino) => _crearFilaTabla(destino))
-                      .toList(),
+                  rows: destinos.map((destino) => _crearFilaTabla(destino)).toList(),
                 ),
               );
             },
@@ -495,13 +428,9 @@ class _PanelOperadorState extends State<PanelOperador> {
     if (url.contains('base64')) {
       try {
         final String cadenaLimpia = url.contains(',') ? url.split(',')[1] : url;
-        return Image.memory(
-          base64Decode(cadenaLimpia.trim()),
-          fit: BoxFit.cover,
-        );
+        return Image.memory(base64Decode(cadenaLimpia.trim()), fit: BoxFit.cover);
       } catch (e) {
-        return const Icon(Icons.broken_image_outlined,
-            color: Colors.red, size: 24);
+        return const Icon(Icons.broken_image_outlined, color: Colors.red, size: 24);
       }
     }
 
@@ -513,130 +442,81 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
-  // REGISTRO DE FILAS (ACTUALIZADO CON CELDAS PARA DURACIÓN Y CALIFICACIÓN)
+  // REGISTRO DE FILAS
   DataRow _crearFilaTabla(Destino destino) {
-<<<<<<< HEAD
-    // Si tu modelo 'Destino' no tiene la propiedad calculada de calificación o duración aún,
-    // puedes usar valores dinámicos alternativos o cadenas de respaldo.
-=======
-    String duracionDestino = "Flexible";
-    if (destino.infoExtra.contains('|')) {
-      List<String> partes = destino.infoExtra.split('|');
-      duracionDestino = partes[1].trim();
-    } else if (destino.categoria == 'Alojamientos') {
-      duracionDestino = "Por Noche";
-    }
-
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-    return DataRow(cells: [
-      // 1. Imagen
-      DataCell(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              width: 115,
-              height: 85,
-              color: Colors.grey[100],
-              child: _construirImagenDestino(destino.urlImagen),
+    return DataRow(
+      cells: [
+        // 1. Imagen
+        DataCell(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                width: 115,
+                height: 85,
+                color: Colors.grey[100],
+                child: _construirImagenDestino(destino.urlImagen),
+              ),
             ),
           ),
         ),
-      ),
-      // 2. Nombre
-      DataCell(Text(destino.nombre,
-          style: const TextStyle(fontWeight: FontWeight.w500))),
-      // 3. Ubicación
-      DataCell(Text(destino.ubicacion)),
-      // 4. Duración (Nueva)
-      DataCell(Text(duracionDestino,
-          style: const TextStyle(color: Colors.blueGrey))),
-      // 5. Precio
-      DataCell(Text('\$${destino.precio}',
-          style: const TextStyle(
-              color: Colors.green, fontWeight: FontWeight.bold))),
-<<<<<<< HEAD
-      
-      // NUEVA CELDA: DURACIÓN
-      // Usamos un valor por defecto ('No definida') en caso de que falte mapear el campo del modelo de Firebase
-      DataCell(Text(destino.duracion.isNotEmpty ? destino.duracion : 'No definida')),
-      
-      // NUEVA CELDA: CALIFICACIÓN (Con diseño estético de estrella)
-      DataCell(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star_rounded, color: Color(0xFFFFCC00), size: 18),
-            const SizedBox(width: 4),
-            // Mostramos la calificación en texto (se asume que existe en el modelo o se extrae un valor base de prueba)
-            Text(
-              destino.calificacion > 0 ? destino.calificacion.toStringAsFixed(1) : '5.0',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
+        // 2. Nombre
+        DataCell(Text(destino.nombre, style: const TextStyle(fontWeight: FontWeight.w500))),
+        // 3. Ubicación
+        DataCell(Text(destino.ubicacion)),
+        // 4. Duración (Directo de la variable mapeada del modelo)
+        DataCell(
+          Text(
+            destino.duracion.isNotEmpty ? destino.duracion : 'No definida',
+            style: const TextStyle(color: Colors.blueGrey),
+          ),
         ),
-      ),
-
-=======
-      // 6. Calificación Interactiva (Nueva)
-      DataCell(
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('resenas')
-              .where('destinoId', isEqualTo: destino.nombre)
-              .snapshots(),
-          builder: (context, snapshot) {
-            double promedio = 0.0;
-            int total = 0;
-
-            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-              total = snapshot.data!.docs.length;
-              double suma = 0;
-              for (var doc in snapshot.data!.docs) {
-                var data = doc.data() as Map<String, dynamic>;
-                suma += (data['calificacion'] ?? 0).toDouble();
-              }
-              promedio = suma / total;
-            }
-
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.star, color: Colors.amber, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  total == 0 ? '0.0' : promedio.toStringAsFixed(1),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(' ($total)',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
-            );
-          },
+        // 5. Precio
+        DataCell(
+          Text(
+            '\$${destino.precio}',
+            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+          ),
         ),
-      ),
-      // 7. Acciones
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
-      DataCell(Row(children: [
-        IconButton(
-          icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-          onPressed: () => _editarDestino(destino),
+        // 6. Calificación (Con diseño estético de estrella usando la propiedad directa del modelo)
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star_rounded, color: Color(0xFFFFCC00), size: 18),
+              const SizedBox(width: 4),
+              Text(
+                destino.calificacion > 0 ? destino.calificacion.toStringAsFixed(1) : '5.0',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
         ),
-        IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-          onPressed: () => _confirmarEliminacion(destino),
+        // 7. Acciones
+        DataCell(
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                onPressed: () => _editarDestino(destino),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                onPressed: () => _confirmarEliminacion(destino),
+              ),
+            ],
+          ),
         ),
-      ])),
-    ]);
+      ],
+    );
   }
 
   Widget _buildTabResenasDinamicas() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Reseñas e Historial de Clientes',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text('Reseñas e Historial de Clientes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         StreamBuilder<List<Resena>>(
           stream: _resenaService.obtenerTodasLasResenas(),
@@ -654,8 +534,7 @@ class _PanelOperadorState extends State<PanelOperador> {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
-                  child: Text('Error al cargar reseñas: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)),
+                  child: Text('Error al cargar reseñas: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
                 ),
               );
             }
@@ -693,8 +572,9 @@ class _PanelOperadorState extends State<PanelOperador> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: Colors.grey.shade200)),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       margin: const EdgeInsets.only(bottom: 15),
       color: Colors.white,
       child: Padding(
@@ -712,18 +592,13 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 16),
-<<<<<<< HEAD
-
-=======
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     resena.destinoNombre,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 2),
                   Row(
@@ -732,18 +607,11 @@ class _PanelOperadorState extends State<PanelOperador> {
                       const SizedBox(width: 4),
                       Text(
                         'Por: ${resena.usuarioNombre}',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-<<<<<<< HEAD
-
-=======
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
                   Text(
                     resena.comentario,
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -752,19 +620,13 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 12),
-<<<<<<< HEAD
-
-=======
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
                   children: List.generate(5, (starIndex) {
                     return Icon(
-                      starIndex < resena.calificacion
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
+                      starIndex < resena.calificacion ? Icons.star_rounded : Icons.star_outline_rounded,
                       color: const Color(0xFFFFCC00),
                       size: 20,
                     );
@@ -782,13 +644,4 @@ class _PanelOperadorState extends State<PanelOperador> {
       ),
     );
   }
-<<<<<<< HEAD
-
-  Widget _buildReservaCard(
-      String tit, String sub, String det, String pre, String est, Color col) {
-    return const SizedBox.shrink();
-  }
 }
-=======
-}
->>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
