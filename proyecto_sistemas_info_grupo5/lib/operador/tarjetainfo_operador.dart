@@ -15,7 +15,7 @@ class SeccionTarjetasInfo extends StatelessWidget {
 
         if (snapshot.hasData) {
           totalPublicaciones = snapshot.data!.docs.length;
-          
+
           for (var doc in snapshot.data!.docs) {
             var data = doc.data() as Map<String, dynamic>;
             if (data['categoria'] == 'Alojamientos') {
@@ -29,6 +29,7 @@ class SeccionTarjetasInfo extends StatelessWidget {
         final colorVerde = Colors.green.shade600;
         final colorAzul = Colors.blue.shade600;
         final colorAmarillo = Colors.amber.shade700;
+        final colorMorado = Colors.purple.shade600;
 
         return Column(
           children: [
@@ -88,12 +89,24 @@ class SeccionTarjetasInfo extends StatelessWidget {
                 ),
                 const SizedBox(width: 15),
                 Expanded(
-                  child: _TarjetaInfo(
-                    titulo: 'Ingresos',
-                    valor: '\$400',
-                    color: colorAmarillo,
-                    icono: Icons.credit_card,
-                    subtitulo: 'Gestión de costos y PayPal',
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('reservas')
+                        .snapshots(),
+                    builder: (context, reservasSnapshot) {
+                      int totalCompras = 0;
+                      if (reservasSnapshot.hasData) {
+                        totalCompras = reservasSnapshot.data!.docs.length;
+                      }
+
+                      return _TarjetaInfo(
+                        titulo: 'Usuarios que han comprado',
+                        valor: totalCompras.toString(),
+                        color: colorMorado,
+                        icono: Icons.person,
+                        subtitulo: 'Historial de compras registradas',
+                      );
+                    },
                   ),
                 ),
               ],
@@ -112,7 +125,7 @@ class _TarjetaInfo extends StatelessWidget {
   final Color color;
   final IconData icono;
   final String? subtitulo;
-  final VoidCallback? onTap; // Variable para detectar el clic en el futuro
+  final VoidCallback? onTap;
 
   const _TarjetaInfo({
     required this.titulo,
@@ -120,21 +133,19 @@ class _TarjetaInfo extends StatelessWidget {
     required this.color,
     required this.icono,
     this.subtitulo,
-    this.onTap, // Añadido al constructor
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Usamos Material para que el color base permita ver el efecto del InkWell
     return Material(
       color: color,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        onTap: onTap, // Aquí se conectará tu futura navegación
-        borderRadius: BorderRadius.circular(8), // Redondea la animación del clic
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(16),
-          // Ya no necesitamos el color aquí porque el Material lo maneja
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -169,9 +180,8 @@ class _TarjetaInfo extends StatelessWidget {
                   if (subtitulo != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      subtitulo!, // El '!' le dice a Flutter que estamos seguros de que no es null aquí
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 11),
+                      subtitulo!,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ]
                 ],

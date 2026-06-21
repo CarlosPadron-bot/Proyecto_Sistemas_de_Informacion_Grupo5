@@ -9,6 +9,7 @@ class Destino {
   final String infoExtra;
   final List<String> queIncluye;
   final String estado;
+  final String operadorId;
 
   Destino({
     this.id,
@@ -21,6 +22,7 @@ class Destino {
     required this.infoExtra,
     required this.queIncluye,
     required this.estado,
+    required this.operadorId,
   });
 
   /// Método para convertir el objeto a un Map (Para GUARDAR en Firestore)
@@ -51,11 +53,10 @@ class Destino {
       infoExtra: map['infoExtra'] ?? '',
       queIncluye: List<String>.from(map['queIncluye'] ?? []),
       estado: map['estado'] ?? 'Otros',
+      operadorId: map['operadorId'] ?? '',
     );
   }
 
-  /// Método copyWith para crear copias del objeto modificando campos específicos
-  /// (Ideal para trabajar con variables 'final')
   Destino copyWith({
     String? id,
     String? nombre,
@@ -67,6 +68,7 @@ class Destino {
     String? infoExtra,
     List<String>? queIncluye,
     String? estado,
+    String? operadorId,
   }) {
     return Destino(
       id: id ?? this.id,
@@ -79,6 +81,7 @@ class Destino {
       infoExtra: infoExtra ?? this.infoExtra,
       queIncluye: queIncluye ?? this.queIncluye,
       estado: estado ?? this.estado,
+      operadorId: operadorId ?? this.operadorId,
     );
   }
 

@@ -4,17 +4,18 @@ import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // Para kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart'; 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CargarDestinoPage extends StatefulWidget {
   final String categoriaInicial;
-  final Destino? destinoAEditar; 
+  final Destino? destinoAEditar;
 
-  const CargarDestinoPage({super.key, 
-  required this.categoriaInicial, 
-  this.destinoAEditar});
+  const CargarDestinoPage(
+      {super.key, required this.categoriaInicial, this.destinoAEditar});
 
   @override
   State<CargarDestinoPage> createState() => _CargarDestinoPageState();
@@ -29,10 +30,11 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
   final TextEditingController _precioController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _infoExtraController = TextEditingController();
-  final TextEditingController _incluyeController = TextEditingController(); 
+  final TextEditingController _incluyeController = TextEditingController();
 
   String _estadoSeleccionado = 'Caracas';
   bool _cargando = false;
+  DateTime? _fechaSeleccionada;
 
   XFile? _imagenSeleccionada;
   final ImagePicker _picker = ImagePicker();
@@ -48,7 +50,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
     'Otros'
   ];
 
-  // --- NUEVO: PRE-LLENAR DATOS SI ESTAMOS EDITANDO ---
   @override
   void initState() {
     super.initState();
@@ -57,10 +58,17 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
       _ubicacionController.text = widget.destinoAEditar!.ubicacion;
       _precioController.text = widget.destinoAEditar!.precio.toString();
       _descripcionController.text = widget.destinoAEditar!.descripcion;
-      _infoExtraController.text = widget.destinoAEditar!.infoExtra;
       _incluyeController.text = widget.destinoAEditar!.queIncluye.join(', ');
-      
-      // Asegurarse de que el estado guardado esté en la lista, si no, poner un valor por defecto
+
+      String infoRaw = widget.destinoAEditar!.infoExtra;
+      if (infoRaw.contains('|')) {
+        String parteCupos = infoRaw.split('|')[0].trim();
+        _infoExtraController.text =
+            parteCupos.replaceAll(RegExp(r'[^0-9]'), '');
+      } else {
+        _infoExtraController.text = infoRaw.replaceAll(RegExp(r'[^0-9]'), '');
+      }
+
       if (_estados.contains(widget.destinoAEditar!.estado)) {
         _estadoSeleccionado = widget.destinoAEditar!.estado;
       }
@@ -70,7 +78,7 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
   Future<void> _seleccionarImagen() async {
     final XFile? imagen = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1920, 
+      maxWidth: 1920,
       maxHeight: 1080,
     );
     if (imagen != null) {
@@ -82,12 +90,13 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
 
   Future<Uint8List> _comprimirBytes(Uint8List bytesOriginales) async {
     try {
-      final Uint8List bytesComprimidos = await FlutterImageCompress.compressWithList(
+      final Uint8List bytesComprimidos =
+          await FlutterImageCompress.compressWithList(
         bytesOriginales,
-        minWidth: 800,       
-        minHeight: 600,      
-        quality: 75,         
-        format: CompressFormat.jpeg, 
+        minWidth: 800,
+        minHeight: 600,
+        quality: 75,
+        format: CompressFormat.jpeg,
       );
       return bytesComprimidos;
     } catch (e) {
@@ -99,6 +108,17 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
   void _publicarDestino() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final String? operadorUid = FirebaseAuth.instance.currentUser?.uid;
+    if (operadorUid == null || operadorUid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Error: No se encontró una sesión de operador activa.'),
+            backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     setState(() => _cargando = true);
 
     List<String> incluyeList = _incluyeController.text
@@ -108,50 +128,80 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
         .toList();
 
     try {
-      double precioDouble = double.tryParse(_precioController.text.trim()) ?? 0.0;
+      double precioDouble =
+          double.tryParse(_precioController.text.trim()) ?? 0.0;
 
-      // MODIFICACIÓN: Si estamos editando y no seleccionamos imagen nueva, mantenemos la anterior
-      String imagenBase64 = widget.destinoAEditar?.urlImagen ?? 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7'; 
+      String imagenBase64 = widget.destinoAEditar?.urlImagen ??
+          'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7';
 
       if (_imagenSeleccionada != null) {
         final bytesOriginales = await _imagenSeleccionada!.readAsBytes();
         final bytesOptimizados = await _comprimirBytes(bytesOriginales);
         String base64String = base64Encode(bytesOptimizados);
-        imagenBase64 = 'base64,$base64String'; 
+        imagenBase64 = 'base64,$base64String';
       }
 
-      // Creamos el objeto Destino. Si estamos editando, conservamos su ID original
+      String cuposIngresados = _infoExtraController.text.trim();
+      String infoExtraFormateada = '';
+
+      // Normalización estricta de categorías para evitar descalces en el String de Firestore
+      String categoriaNormalizada = widget.categoriaInicial;
+      if (categoriaNormalizada.contains('Paquete')) {
+        categoriaNormalizada = 'Paquetes Turisticos';
+      }
+
+      if (cuposIngresados.isEmpty) {
+        infoExtraFormateada = (categoriaNormalizada == 'Alojamientos'
+            ? 'Por noche'
+            : 'Cupos limitados');
+      } else {
+        String soloNumeroCupos =
+            cuposIngresados.replaceAll(RegExp(r'[^0-9]'), '');
+        infoExtraFormateada = '$soloNumeroCupos Cupos';
+      }
+
+      if (_fechaSeleccionada != null) {
+        String fechaString =
+            '${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}';
+        infoExtraFormateada = '$infoExtraFormateada | $fechaString';
+      } else if (widget.destinoAEditar != null &&
+          widget.destinoAEditar!.infoExtra.contains('|')) {
+        String fechaVieja =
+            widget.destinoAEditar!.infoExtra.split('|')[1].trim();
+        infoExtraFormateada = '$infoExtraFormateada | $fechaVieja';
+      } else {
+        infoExtraFormateada = '$infoExtraFormateada | Fecha por programar';
+      }
+
       Destino nuevoDestino = Destino(
-        id: widget.destinoAEditar?.id, // <-- Importante para que Firebase sepa cuál actualizar
+        id: widget.destinoAEditar?.id,
         nombre: _nombreController.text.trim(),
         ubicacion: _ubicacionController.text.trim(),
         precio: precioDouble,
         descripcion: _descripcionController.text.trim(),
         urlImagen: imagenBase64,
-        categoria: widget.categoriaInicial,
-        infoExtra: _infoExtraController.text.trim().isEmpty
-            ? (widget.categoriaInicial == 'Alojamientos' ? 'Por noche' : 'Cupos limitados')
-            : _infoExtraController.text.trim(),
+        categoria: categoriaNormalizada,
+        infoExtra: infoExtraFormateada,
         queIncluye: incluyeList.isEmpty ? ['Hospedaje o Guía'] : incluyeList,
         estado: _estadoSeleccionado,
+        operadorId: widget.destinoAEditar?.operadorId ?? operadorUid,
       );
 
-      // MODIFICACIÓN: Decidir si Crear o Actualizar
       if (widget.destinoAEditar != null) {
-        await _destinoService.actualizarDestino(nuevoDestino); // <-- Debes tener este método en tu DestinoService
+        await _destinoService.actualizarDestino(nuevoDestino);
       } else {
         await _destinoService.guardarDestino(nuevoDestino);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-              content: Text(widget.destinoAEditar != null 
-                  ? '¡Servicio actualizado con éxito!' 
+          SnackBar(
+              content: Text(widget.destinoAEditar != null
+                  ? '¡Servicio actualizado con éxito!'
                   : '¡Servicio turístico publicado con éxito!'),
               backgroundColor: Colors.green),
         );
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -166,7 +216,6 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Variable para saber si estamos editando
     bool esEdicion = widget.destinoAEditar != null;
 
     return Scaffold(
@@ -178,10 +227,10 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // MODIFICACIÓN: Título dinámico
               Text(
                 '${esEdicion ? 'Editar' : 'Publicar'} ${widget.categoriaInicial == 'Alojamientos' ? 'Alojamiento' : 'Paquete Turístico'}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -189,7 +238,9 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                 decoration: const InputDecoration(
                     labelText: 'Título del destino / hospedaje',
                     border: OutlineInputBorder()),
-                validator: (value) => (value == null || value.isEmpty) ? 'Ingrese el título' : null,
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'Ingrese el título'
+                    : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -200,7 +251,9 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                       decoration: const InputDecoration(
                           labelText: 'Ubicación específica (Ej: Chichiriviche)',
                           border: OutlineInputBorder()),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese la ubicación' : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Ingrese la ubicación'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -210,8 +263,12 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                       decoration: const InputDecoration(
                           labelText: 'Estado político',
                           border: OutlineInputBorder()),
-                      items: _estados.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: (val) => setState(() => _estadoSeleccionado = val!),
+                      items: _estados
+                          .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: (val) =>
+                          setState(() => _estadoSeleccionado = val!),
                     ),
                   ),
                 ],
@@ -227,16 +284,67 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                           border: OutlineInputBorder(),
                           prefixText: '\$ '),
                       keyboardType: TextInputType.number,
-                      validator: (value) => double.tryParse(value ?? '') == null ? 'Precio inválido' : null,
+                      validator: (value) => double.tryParse(value ?? '') == null
+                          ? 'Precio inválido'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: TextFormField(
-                      controller: _infoExtraController,
-                      decoration: const InputDecoration(
-                          labelText: 'Disponibilidad (Ej: 3 días · 2 cupos)',
-                          border: OutlineInputBorder()),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _infoExtraController,
+                            decoration: const InputDecoration(
+                                hintText: 'Solo números',
+                                labelText: 'Cupos disponibles',
+                                border: OutlineInputBorder()),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: SizedBox(
+                            height: 56,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4)),
+                                side: BorderSide(color: Colors.grey[600]!),
+                              ),
+                              onPressed: () async {
+                                final DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime(2101),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _fechaSeleccionada = picked;
+                                  });
+                                }
+                              },
+                              child: Text(
+                                _fechaSeleccionada == null
+                                    ? 'Selecciona la fecha de tu experiencia'
+                                    : 'Fecha: ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -245,7 +353,8 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
               TextFormField(
                 controller: _incluyeController,
                 decoration: const InputDecoration(
-                    labelText: '¿Qué incluye? (Separa los elementos por comas ",")',
+                    labelText:
+                        '¿Qué incluye? (Separa los elementos por comas ",")',
                     border: OutlineInputBorder(),
                     hintText: 'Traslado, Almuerzos, Paseo en lancha'),
               ),
@@ -256,13 +365,17 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                     labelText: 'Descripción detallada de la experiencia',
                     border: OutlineInputBorder()),
                 maxLines: 4,
-                validator: (value) => (value == null || value.isEmpty) ? 'Ingrese una descripción' : null,
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'Ingrese una descripción'
+                    : null,
               ),
               const SizedBox(height: 16),
-              
               Text(
-                esEdicion ? 'Actualizar imagen de portada (Opcional)' : 'Imagen de portada',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                esEdicion
+                    ? 'Actualizar imagen de portada (Opcional)'
+                    : 'Imagen de portada',
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               InkWell(
@@ -277,43 +390,49 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: _imagenSeleccionada == null
-                      ? (esEdicion && widget.destinoAEditar!.urlImagen.startsWith('base64,'))
-                          // Si es edición y ya tenía un base64, lo previsualizamos
+                      ? (esEdicion &&
+                              widget.destinoAEditar!.urlImagen
+                                  .startsWith('base64,'))
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.memory(
-                                base64Decode(widget.destinoAEditar!.urlImagen.split(',')[1]),
+                                base64Decode(widget.destinoAEditar!.urlImagen
+                                    .split(',')[1]),
                                 fit: BoxFit.cover,
                               ),
                             )
                           : const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_photo_alternate_outlined, size: 50, color: Colors.grey),
+                                Icon(Icons.add_photo_alternate_outlined,
+                                    size: 50, color: Colors.grey),
                                 SizedBox(height: 8),
-                                Text('Haz clic para subir una imagen', style: TextStyle(color: Colors.grey)),
+                                Text('Haz clic para subir una imagen',
+                                    style: TextStyle(color: Colors.grey)),
                               ],
                             )
                       : ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: kIsWeb
-                              ? Image.network(_imagenSeleccionada!.path, fit: BoxFit.cover)
-                              : Image.file(File(_imagenSeleccionada!.path), fit: BoxFit.cover),
+                              ? Image.network(_imagenSeleccionada!.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(_imagenSeleccionada!.path),
+                                  fit: BoxFit.cover),
                         ),
                 ),
               ),
-
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009933)),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF009933)),
                   onPressed: _cargando ? null : _publicarDestino,
                   child: _cargando
                       ? const CircularProgressIndicator(color: Colors.white)
-                      // MODIFICACIÓN: Texto del botón dinámico
-                      : Text(esEdicion ? 'ACTUALIZAR CAMBIOS' : 'PUBLICAR AHORA',
+                      : Text(
+                          esEdicion ? 'ACTUALIZAR CAMBIOS' : 'PUBLICAR AHORA',
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,

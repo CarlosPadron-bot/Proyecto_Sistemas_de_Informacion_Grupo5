@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets_generales/header_gen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // <-- AÑADIDO: Import para validar estado en la BD
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -14,7 +14,7 @@ class DetalleDestinoPage extends StatefulWidget {
   final String title;
   final String location;
   final String price;
-  final String priceSuffix;
+  final String infoExtra;
   final String rating;
   final String reviewCount;
   final String imageUrl;
@@ -26,7 +26,7 @@ class DetalleDestinoPage extends StatefulWidget {
     required this.title,
     required this.location,
     required this.price,
-    required this.priceSuffix,
+    required this.infoExtra,
     required this.rating,
     required this.reviewCount,
     required this.imageUrl,
@@ -76,7 +76,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
       if (!mounted) return;
 
       try {
-        // 1. Obtener token de acceso de PayPal
         final authTokenResponse = await http.post(
           Uri.parse('https://api-m.sandbox.paypal.com/v1/oauth2/token'),
           headers: {
@@ -91,7 +90,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         final String accessToken =
             jsonDecode(authTokenResponse.body)['access_token'];
 
-        // 2. Consultar los detalles de la orden en PayPal ANTES de capturar
         final detailsResponse = await http.get(
           Uri.parse(
               'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden'),
@@ -104,7 +102,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         if (detailsResponse.statusCode != 200) return;
         final dataDetalles = jsonDecode(detailsResponse.body);
 
-        // Extraemos el custom_id que guardamos al iniciar el pago
         final String destinoIdEnOrden =
             dataDetalles['purchase_units'][0]['custom_id'] ?? '';
 
@@ -115,7 +112,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
           return;
         }
 
-        // Si el destino coincide, procedemos a realizar la captura de forma legítima
         setState(() {
           _cargandoPago = true;
         });
@@ -123,7 +119,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
         _mostrarSnackBar(
             'Procesando y confirming tu pago con PayPal...', Colors.blue);
 
-        // 3. Capturar el pago de la orden
         final captureResponse = await http.post(
           Uri.parse(
               'https://api-m.sandbox.paypal.com/v2/checkout/orders/$tokenOrden/capture'),
@@ -152,7 +147,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
               urlImagen: widget.imageUrl,
             );
 
-            // 4. Persistencia en Firebase exitosa
             await _reservaService.registrarReserva(nuevaReserva);
 
             _mostrarSnackBar(
@@ -184,7 +178,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
   Future<void> _iniciarPagoPayPal(double totalAmount) async {
     setState(() => _cargandoPago = true);
 
-    // Guardamos la URL exacta con hash para que regrese a la vista de detalle
     final String currentUrl = html.window.location.href.split('?')[0];
     final String returnUrl = currentUrl;
     final String cancelUrl = "${html.window.location.origin}/#/";
@@ -266,13 +259,12 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     );
   }
 
-  //  Nueva funcion para abrir la ubicacion en Google Maps
   Future<void> _abrirEnGoogleMaps() async {
-    // Une la ubicación actual con el país para mayor precisión
-    final String busquedaCodificada = Uri.encodeComponent('${widget.location}, Venezuela');
-    
-    // URL universal de búsqueda en Google Maps
-    final Uri urlMaps = Uri.parse('https://www.google.com/maps/search/?api=1&query=$busquedaCodificada');
+    final String busquedaCodificada =
+        Uri.encodeComponent('${widget.location}, Venezuela');
+
+    final Uri urlMaps = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$busquedaCodificada');
 
     try {
       if (await canLaunchUrl(urlMaps)) {
@@ -287,19 +279,20 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     }
   }
 
-  // AÑADIDO: Diálogo estético para advertir la suspensión
   void _mostrarAlertaSuspendido(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
               Icon(Icons.gpp_bad_rounded, color: Colors.orange, size: 28),
               SizedBox(width: 10),
-              Text('Cuenta Suspendida', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Cuenta Suspendida',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           content: const Text(
@@ -313,17 +306,17 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('Entendido', style: TextStyle(color: Colors.white)),
+              child: const Text('Entendido',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         );
       },
     );
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -371,8 +364,11 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                         children: [
                           Expanded(
                               flex: 2,
-                              child: _buildContenidoIzquierdo(promedioRating,
-                                  cantidadResenas, resenasDocumentos)),
+                              child: _buildContenidoIzquierdo(
+                                  promedioRating,
+                                  boxConstraints: const BoxConstraints(),
+                                  cantidadResenas,
+                                  resenasDocumentos)),
                           const SizedBox(width: 40),
                           Expanded(
                               flex: 1,
@@ -383,8 +379,11 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                     else
                       Column(
                         children: [
-                          _buildContenidoIzquierdo(promedioRating,
-                              cantidadResenas, resenasDocumentos),
+                          _buildContenidoIzquierdo(
+                              promedioRating,
+                              boxConstraints: const BoxConstraints(),
+                              cantidadResenas,
+                              resenasDocumentos),
                           const SizedBox(height: 24),
                           _buildCajaReserva(precioIndividual, total),
                         ],
@@ -399,8 +398,31 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
     );
   }
 
-  Widget _buildContenidoIzquierdo(double rating, int totalResenas,
-      List<QueryDocumentSnapshot> docsResenas) {
+  Widget _buildContenidoIzquierdo(
+      double rating, int totalResenas, List<QueryDocumentSnapshot> docsResenas,
+      {BoxConstraints? boxConstraints}) {
+    String cuposAMostrar = "Sin cupos asignados";
+    String fechaAMostrar = "Fecha no definida";
+
+    if (widget.infoExtra.isNotEmpty && widget.infoExtra.contains('|')) {
+      List<String> partes = widget.infoExtra.split('|');
+
+      String parteCupos = partes[0].trim();
+      String parteFecha = partes[1].trim();
+
+      if (parteCupos.toLowerCase().contains('cupo')) {
+        cuposAMostrar = parteCupos;
+      } else {
+        cuposAMostrar = '$parteCupos cupos';
+      }
+      fechaAMostrar = parteFecha;
+    } else if (widget.infoExtra.isNotEmpty) {
+      String soloNumeros = widget.infoExtra.replaceAll(RegExp(r'[^0-9]'), '');
+      if (soloNumeros.isNotEmpty) {
+        cuposAMostrar = '$soloNumeros cupos';
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -431,16 +453,18 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
             Text(widget.location,
                 style: const TextStyle(color: Colors.grey, fontSize: 14)),
             const SizedBox(width: 15),
+            const Icon(Icons.people_outline, color: Colors.grey, size: 18),
+            const SizedBox(width: 4),
+            // Muestra el número de cupos exactos procesados
+            Text(cuposAMostrar,
+                style: const TextStyle(color: Colors.grey, fontSize: 14)),
+            const SizedBox(width: 15),
             const Icon(Icons.calendar_today_outlined,
                 color: Colors.grey, size: 16),
             const SizedBox(width: 4),
-            const Text('3 días',
-                style: TextStyle(color: Colors.grey, fontSize: 14)),
-            const SizedBox(width: 15),
-            const Icon(Icons.people_outline, color: Colors.grey, size: 18),
-            const SizedBox(width: 4),
-            const Text('Hasta 8 personas',
-                style: TextStyle(color: Colors.grey, fontSize: 14)),
+            // Muestra la fecha limpia asignada por el operador
+            Text(fechaAMostrar,
+                style: const TextStyle(color: Colors.grey, fontSize: 14)),
           ],
         ),
         const SizedBox(height: 12),
@@ -456,8 +480,8 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
             const SizedBox(width: 15),
             const Icon(Icons.check, color: Color(0xFF009933), size: 16),
             const SizedBox(width: 4),
-            const Text('6 cupos disponibles',
-                style: TextStyle(
+            Text('$cuposAMostrar disponibles',
+                style: const TextStyle(
                     color: Color(0xFF009933),
                     fontWeight: FontWeight.bold,
                     fontSize: 16)),
@@ -675,7 +699,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF009933))),
                 const SizedBox(width: 4),
-                const Text('por persona',
+                const Text('/por persona',
                     style: TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),
@@ -757,7 +781,6 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                       borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
-                // CAMBIADO A ASYNC: Lógica de validación de suspensión integrada aquí
                 onPressed: _cargandoPago
                     ? null
                     : () async {
@@ -775,34 +798,34 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
                           return;
                         }
 
-                        // Activamos el spinner visual preventivamente mientras consultamos Firestore
                         setState(() => _cargandoPago = true);
 
                         try {
-                          // Consultamos de forma asíncrona el documento del usuario directo en Firestore
-                          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+                          DocumentSnapshot userDoc = await FirebaseFirestore
+                              .instance
                               .collection('usuarios')
                               .doc(usuarioActual.uid)
                               .get();
 
                           if (userDoc.exists) {
-                            final data = userDoc.data() as Map<String, dynamic>?;
+                            final data =
+                                userDoc.data() as Map<String, dynamic>?;
                             final bool estaActivo = data?['activo'] ?? true;
 
-                            //  SI EL VIAJERO ESTÁ SUSPENDIDO: Detenemos todo, apagamos spinner y alertamos
                             if (!estaActivo) {
                               setState(() => _cargandoPago = false);
                               _mostrarAlertaSuspendido(context);
-                              return; 
+                              return;
                             }
                           }
                         } catch (e) {
                           setState(() => _cargandoPago = false);
-                          _mostrarSnackBar('Error al verificar el estado de tu cuenta: $e', Colors.redAccent);
+                          _mostrarSnackBar(
+                              'Error al verificar el estado de tu cuenta: $e',
+                              Colors.redAccent);
                           return;
                         }
 
-                        // Si pasó la prueba de fuego y está activo, procesa el pago normal
                         _iniciarPagoPayPal(total);
                       },
                 child: _cargandoPago
