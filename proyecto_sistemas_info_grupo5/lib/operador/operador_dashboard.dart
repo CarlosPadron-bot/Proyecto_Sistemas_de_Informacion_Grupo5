@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/widgets_generales/header_gen.dart';
-import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart' hide CustomHeader;
+import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart'
+    hide CustomHeader;
 
 class OperadorDashboard extends StatelessWidget {
   const OperadorDashboard({super.key});
@@ -14,7 +15,7 @@ class OperadorDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- BARRA EXCLUSIVA DE OPERADOR 
+            // --- BARRA EXCLUSIVA DE OPERADOR
             Container(
               width: double.infinity,
               color: const Color.fromARGB(255, 45, 133, 49),
@@ -26,7 +27,8 @@ class OperadorDashboard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '¡¡Bienvenido operador! Prepara la próxima gran aventura para tus clientes y haz crecer tu negocio.',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -45,9 +47,7 @@ class OperadorDashboard extends StatelessWidget {
                   ),
                   SizedBox(height: 12),
                   HorizontalCarousel(isAccommodation: false),
-
                   SizedBox(height: 24),
-
                   Text(
                     'Tus Alojamientos',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),

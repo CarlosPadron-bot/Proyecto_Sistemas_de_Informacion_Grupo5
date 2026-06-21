@@ -11,8 +11,12 @@ class Destino {
   final String infoExtra;
   final List<String> queIncluye;
   final String estado;
+<<<<<<< HEAD
   final String duracion;       
   final double calificacion;   
+=======
+  final String operadorId;
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
 
   Destino({
     this.id,
@@ -25,8 +29,12 @@ class Destino {
     required this.infoExtra,
     required this.queIncluye,
     required this.estado,
+<<<<<<< HEAD
     required this.duracion,    
     required this.calificacion, 
+=======
+    required this.operadorId,
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
   });
 
   factory Destino.fromFirestore(DocumentSnapshot doc) {
@@ -62,4 +70,55 @@ class Destino {
       'calificacion': calificacion, 
     };
   }
+<<<<<<< HEAD
 }
+=======
+
+  /// Factory para crear un objeto a partir de un Map (Para LEER de Firestore)
+  factory Destino.fromFirestore(String documentId, Map<String, dynamic> map) {
+    return Destino(
+      id: documentId,
+      nombre: map['nombre'] ?? '',
+      ubicacion: map['ubicacion'] ?? '',
+      precio: (map['precio'] ?? 0.0).toDouble(),
+      descripcion: map['descripcion'] ?? '',
+      urlImagen: map['urlImagen'] ?? '',
+      categoria: map['categoria'] ?? 'Paquetes Turisticos',
+      infoExtra: map['infoExtra'] ?? '',
+      queIncluye: List<String>.from(map['queIncluye'] ?? []),
+      estado: map['estado'] ?? 'Otros',
+      operadorId: map['operadorId'] ?? '',
+    );
+  }
+
+  Destino copyWith({
+    String? id,
+    String? nombre,
+    String? ubicacion,
+    double? precio,
+    String? descripcion,
+    String? urlImagen,
+    String? categoria,
+    String? infoExtra,
+    List<String>? queIncluye,
+    String? estado,
+    String? operadorId,
+  }) {
+    return Destino(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      ubicacion: ubicacion ?? this.ubicacion,
+      precio: precio ?? this.precio,
+      descripcion: descripcion ?? this.descripcion,
+      urlImagen: urlImagen ?? this.urlImagen,
+      categoria: categoria ?? this.categoria,
+      infoExtra: infoExtra ?? this.infoExtra,
+      queIncluye: queIncluye ?? this.queIncluye,
+      estado: estado ?? this.estado,
+      operadorId: operadorId ?? this.operadorId,
+    );
+  }
+
+  static fromMap(Map<String, dynamic> data) {}
+}
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db

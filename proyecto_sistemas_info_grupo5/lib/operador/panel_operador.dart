@@ -6,6 +6,8 @@ import 'package:proyecto_sistemas_info_grupo5/Servicios/destino_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/resena_service.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/destino_model.dart';
 import 'package:proyecto_sistemas_info_grupo5/modelos/resena_model.dart';
+import 'package:proyecto_sistemas_info_grupo5/operador/grafico_operador.dart';
+import 'package:proyecto_sistemas_info_grupo5/operador/tarjetainfo_operador.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -19,7 +21,11 @@ class PanelOperador extends StatefulWidget {
 class _PanelOperadorState extends State<PanelOperador> {
   int _selectedIndex = 0;
   final DestinoService _destinoService = DestinoService();
+<<<<<<< HEAD
   final ResenaService _resenaService = ResenaService(); // Instanciamos el servicio
+=======
+  final ResenaService _resenaService = ResenaService();
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
 
   // FUNCIÓN PARA EL POPUP DE ELIMINAR (ROJO Y ADVERTENCIA)
   void _confirmarEliminacion(Destino destino) {
@@ -50,7 +56,7 @@ class _PanelOperadorState extends State<PanelOperador> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                Navigator.pop(context); // Cierra el popup
+                Navigator.pop(context);
 
                 if (destino.id == null || destino.id!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +77,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                           content: Text('Servicio eliminado con éxito'),
                           backgroundColor: Colors.red),
                     );
-                    setState(() {}); // Refresca la pantalla
+                    setState(() {});
                   }
                 } catch (e) {
                   if (mounted) {
@@ -104,7 +110,7 @@ class _PanelOperadorState extends State<PanelOperador> {
         ),
       ),
     ).then((_) {
-      setState(() {}); // Refrescar la tabla al volver
+      setState(() {});
     });
   }
 
@@ -124,43 +130,47 @@ class _PanelOperadorState extends State<PanelOperador> {
         final bool esActivo = data['activo'] ?? true;
         final bool esEliminado = data['eliminado'] ?? false;
 
-        // Si está inactivo o eliminado, mostramos el bloqueo y NO navegamos
         if (!esActivo || esEliminado) {
           if (mounted) {
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 title: const Row(
                   children: [
                     Icon(Icons.block, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('Acción denegada', style: TextStyle(color: Colors.red)),
+                    Text('Acción denegada',
+                        style: TextStyle(color: Colors.red)),
                   ],
                 ),
-                content: const Text('Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.'),
+                content: const Text(
+                    'Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Entendido', style: TextStyle(color: Colors.blue)),
+                    child: const Text('Entendido',
+                        style: TextStyle(color: Colors.blue)),
                   ),
                 ],
               ),
             );
           }
-          return; // Detenemos la ejecución aquí
+          return;
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al verificar cuenta: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Error al verificar cuenta: $e'),
+              backgroundColor: Colors.red),
         );
       }
       return;
     }
 
-    // SI PASA LA VALIDACIÓN, NAVEGAMOS A LA PANTALLA NORMALMENTE
     if (mounted) {
       Navigator.push(
         context,
@@ -191,7 +201,6 @@ class _PanelOperadorState extends State<PanelOperador> {
               const Text('Gestión y análisis de tus servicios y clientes',
                   style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 30),
-
               Container(
                 decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.black12))),
@@ -208,8 +217,6 @@ class _PanelOperadorState extends State<PanelOperador> {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // Contenido de las tabs
               if (_selectedIndex == 0) _buildTabDashboard(),
               if (_selectedIndex == 1)
                 _buildTabServiciosDinamico('Paquetes Turisticos'),
@@ -257,16 +264,15 @@ class _PanelOperadorState extends State<PanelOperador> {
 
   Widget _buildTabDashboard() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const SeccionTarjetasInfo(),
+        const SizedBox(height: 20),
+        const Row(
           children: [
-            Expanded(
-                child: _buildMockCard('Destinos por Rango de Precio',
-                    Icons.bar_chart, Colors.blue)),
-            const SizedBox(width: 20),
-            Expanded(
-                child: _buildMockCard(
-                    'Distribución por Estado', Icons.pie_chart, Colors.orange)),
+            Expanded(child: GraficoPrecios()),
+            SizedBox(width: 20),
+            Expanded(child: GraficoEstados()),
           ],
         ),
         const SizedBox(height: 20),
@@ -289,36 +295,30 @@ class _PanelOperadorState extends State<PanelOperador> {
                     const SizedBox(height: 15),
                     Row(
                       children: [
-                        // StreamBuilder en tiempo real para contar documentos en la colección de reservas
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('reservas')
                                 .snapshots(),
                             builder: (context, snapshot) {
-                              String totalReservas = '0';
-                              if (snapshot.hasData) {
-                                totalReservas =
-                                    snapshot.data!.docs.length.toString();
-                              }
+                              String totalReservas = snapshot.hasData
+                                  ? snapshot.data!.docs.length.toString()
+                                  : '0';
                               return _buildReservaStat(
                                   totalReservas, 'Pagadas', Colors.green);
                             },
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // StreamBuilder en tiempo real para contar documentos en la colección de reseñas (completadas)
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('resenas')
                                 .snapshots(),
                             builder: (context, snapshot) {
-                              String totalCompletadas = '0';
-                              if (snapshot.hasData) {
-                                totalCompletadas =
-                                    snapshot.data!.docs.length.toString();
-                              }
+                              String totalCompletadas = snapshot.hasData
+                                  ? snapshot.data!.docs.length.toString()
+                                  : '0';
                               return _buildReservaStat(totalCompletadas,
                                   'Completadas', Colors.purple);
                             },
@@ -331,9 +331,7 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 20),
-            Expanded(
-                child: _buildMockCard('Ingresos Mensuales',
-                    Icons.stacked_line_chart, Colors.green)),
+            const Expanded(child: GraficoIngresos()),
           ],
         ),
       ],
@@ -360,6 +358,7 @@ class _PanelOperadorState extends State<PanelOperador> {
     );
   }
 
+<<<<<<< HEAD
   Widget _buildMockCard(String title, IconData icon, Color color) {
     return Container(
       height: 220,
@@ -393,6 +392,8 @@ class _PanelOperadorState extends State<PanelOperador> {
   }
 
   // TABLA DINÁMICA QUE LEE DE FIREBASE (ACTUALIZADA CON DURACIÓN Y CALIFICACIÓN)
+=======
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
   Widget _buildTabServiciosDinamico(String categoria) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,7 +405,11 @@ class _PanelOperadorState extends State<PanelOperador> {
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
+<<<<<<< HEAD
               onPressed: () => _verificarPermisosYNavegar(categoria), 
+=======
+              onPressed: () => _verificarPermisosYNavegar(categoria),
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
                   'Nuevo ${categoria == 'Alojamientos' ? 'Alojamiento' : 'Paquete'}',
@@ -460,9 +465,14 @@ class _PanelOperadorState extends State<PanelOperador> {
                     DataColumn(label: Text('Imagen')),
                     DataColumn(label: Text('Nombre')),
                     DataColumn(label: Text('Ubicación')),
+                    DataColumn(label: Text('Duración')),
                     DataColumn(label: Text('Precio')),
+<<<<<<< HEAD
                     DataColumn(label: Text('Duración')),     // NUEVA COLUMNA
                     DataColumn(label: Text('Calificación')), // NUEVA COLUMNA
+=======
+                    DataColumn(label: Text('Calificación')),
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
                     DataColumn(label: Text('Acciones')),
                   ],
                   rows: destinos
@@ -505,9 +515,21 @@ class _PanelOperadorState extends State<PanelOperador> {
 
   // REGISTRO DE FILAS (ACTUALIZADO CON CELDAS PARA DURACIÓN Y CALIFICACIÓN)
   DataRow _crearFilaTabla(Destino destino) {
+<<<<<<< HEAD
     // Si tu modelo 'Destino' no tiene la propiedad calculada de calificación o duración aún,
     // puedes usar valores dinámicos alternativos o cadenas de respaldo.
+=======
+    String duracionDestino = "Flexible";
+    if (destino.infoExtra.contains('|')) {
+      List<String> partes = destino.infoExtra.split('|');
+      duracionDestino = partes[1].trim();
+    } else if (destino.categoria == 'Alojamientos') {
+      duracionDestino = "Por Noche";
+    }
+
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
     return DataRow(cells: [
+      // 1. Imagen
       DataCell(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -522,12 +544,19 @@ class _PanelOperadorState extends State<PanelOperador> {
           ),
         ),
       ),
+      // 2. Nombre
       DataCell(Text(destino.nombre,
           style: const TextStyle(fontWeight: FontWeight.w500))),
+      // 3. Ubicación
       DataCell(Text(destino.ubicacion)),
+      // 4. Duración (Nueva)
+      DataCell(Text(duracionDestino,
+          style: const TextStyle(color: Colors.blueGrey))),
+      // 5. Precio
       DataCell(Text('\$${destino.precio}',
           style: const TextStyle(
               color: Colors.green, fontWeight: FontWeight.bold))),
+<<<<<<< HEAD
       
       // NUEVA CELDA: DURACIÓN
       // Usamos un valor por defecto ('No definida') en caso de que falte mapear el campo del modelo de Firebase
@@ -549,6 +578,46 @@ class _PanelOperadorState extends State<PanelOperador> {
         ),
       ),
 
+=======
+      // 6. Calificación Interactiva (Nueva)
+      DataCell(
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('resenas')
+              .where('destinoId', isEqualTo: destino.nombre)
+              .snapshots(),
+          builder: (context, snapshot) {
+            double promedio = 0.0;
+            int total = 0;
+
+            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              total = snapshot.data!.docs.length;
+              double suma = 0;
+              for (var doc in snapshot.data!.docs) {
+                var data = doc.data() as Map<String, dynamic>;
+                suma += (data['calificacion'] ?? 0).toDouble();
+              }
+              promedio = suma / total;
+            }
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, color: Colors.amber, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  total == 0 ? '0.0' : promedio.toStringAsFixed(1),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(' ($total)',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            );
+          },
+        ),
+      ),
+      // 7. Acciones
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
       DataCell(Row(children: [
         IconButton(
           icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
@@ -643,7 +712,10 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 16),
+<<<<<<< HEAD
 
+=======
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,7 +740,10 @@ class _PanelOperadorState extends State<PanelOperador> {
                     ],
                   ),
                   const SizedBox(height: 6),
+<<<<<<< HEAD
 
+=======
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
                   Text(
                     resena.comentario,
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -677,7 +752,10 @@ class _PanelOperadorState extends State<PanelOperador> {
               ),
             ),
             const SizedBox(width: 12),
+<<<<<<< HEAD
 
+=======
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -704,9 +782,13 @@ class _PanelOperadorState extends State<PanelOperador> {
       ),
     );
   }
+<<<<<<< HEAD
 
   Widget _buildReservaCard(
       String tit, String sub, String det, String pre, String est, Color col) {
     return const SizedBox.shrink();
   }
 }
+=======
+}
+>>>>>>> 278bd9f14ac1161280cd9265f5144fd4cda176db

@@ -27,20 +27,22 @@ class FeaturedSection extends StatelessWidget {
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          // Usamos ListView horizontal o Column. Aquí un ListView para formato carrusel
           SizedBox(
-            height: 350, // Altura fija para el carrusel de tarjetas
+            height: 350,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: 3, // Equivale a mockPackages.slice(0, 3)
+              itemCount: 3,
               itemBuilder: (context, index) {
+                // Definimos el string quemado simulando el formato de Firebase para que no falle el split('|')
+                final String mockInfoExtra = isAccommodation
+                    ? '4 Cupos | Disponibilidad Inmediata'
+                    : '10 Cupos | 30/06/2026';
+
                 return Container(
                   width: 280,
                   margin: const EdgeInsets.only(right: 16.0),
-                  // Envolvemos el ItemCard en un InkWell
                   child: InkWell(
                     onTap: () {
-                      // Navegación a la pantalla de detalle
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -50,14 +52,12 @@ class FeaturedSection extends StatelessWidget {
                                 : 'Tour Páramo',
                             location: 'Mérida, Mérida',
                             price: isAccommodation ? '25' : '120',
-                            priceSuffix:
-                                isAccommodation ? '/noche' : '/persona',
+                            infoExtra: mockInfoExtra,
                             rating: '4.8',
                             reviewCount: '24',
                             imageUrl: isAccommodation
                                 ? "assets/posada.png"
                                 : "assets/merida.png",
-                            // Asegúrate de pasar la URL si la tienes
                             description: 'Descripción detallada...',
                             includes: const ['Desayuno', 'Guía'],
                           ),

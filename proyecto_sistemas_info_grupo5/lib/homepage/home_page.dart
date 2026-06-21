@@ -117,11 +117,43 @@ class _HomePageState extends State<HomePage> {
                   .get();
 
               if (destinoQuery.docs.isNotEmpty) {
+                final destinoDocRef = destinoQuery.docs.first.reference;
                 imagenDelDestino =
                     destinoQuery.docs.first.data()['urlImagen'] ?? '';
+
+                await FirebaseFirestore.instance
+                    .runTransaction((transaction) async {
+                  DocumentSnapshot snapshotDestino =
+                      await transaction.get(destinoDocRef);
+                  if (snapshotDestino.exists) {
+                    Map<String, dynamic> data =
+                        snapshotDestino.data() as Map<String, dynamic>;
+                    String infoExtraActual = data['infoExtra'] ?? '';
+
+                    if (infoExtraActual.contains('|')) {
+                      List<String> partes = infoExtraActual.split('|');
+                      String textoCupos = partes[0].trim();
+                      String textoFecha = partes[1].trim();
+
+                      int cuposActuales = int.tryParse(
+                              textoCupos.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                          0;
+                      if (cuposActuales > 0) {
+                        int nuevosCupos = cuposActuales - 1;
+
+                        String nuevaInfoExtra =
+                            '$nuevosCupos Cupos | $textoFecha';
+
+                        transaction.update(
+                            destinoDocRef, {'infoExtra': nuevaInfoExtra});
+                      }
+                    }
+                  }
+                });
               }
             } catch (e) {
-              print("No se pudo recuperar la imagen del destino: $e");
+              print(
+                  "Error al recuperar la imagen o actualizar los cupos del destino: $e");
             }
 
             // 4. Instanciamos la nueva reserva asignándole la imagen real obtenida
@@ -298,7 +330,6 @@ class HorizontalCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 350,
-      // 1. Quitamos el .where() de la consulta para traer TODOS los destinos
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('destinos').snapshots(),
         builder: (context, snapshot) {
@@ -328,11 +359,21 @@ class HorizontalCarousel extends StatelessWidget {
           // 2. Obtenemos la lista completa de documentos de la base de datos
           final todosLosDestinos = snapshot.data!.docs;
 
-          // 3. FILTRAMOS EN FLUTTER: Aplicamos tu lógica de descarte
+          // 3. FILTRAMOS EN FLUTTER: Aplicamos tu lógica de descarte y control de cupos agotados
           final destinos = todosLosDestinos.where((doc) {
             final destinoData = doc.data() as Map<String, dynamic>;
-            // Si el campo 'categoria' no existe, le asignamos un texto vacío ''
             final String categoria = destinoData['categoria'] ?? '';
+            final String infoExtra = destinoData['infoExtra'] ?? '';
+
+            int cuposDisponibles = 1;
+            if (infoExtra.contains('|')) {
+              String textoCupos = infoExtra.split('|')[0];
+              cuposDisponibles =
+                  int.tryParse(textoCupos.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                      0;
+            }
+
+            if (cuposDisponibles <= 0) return false;
 
             if (isAccommodation) {
               return categoria == 'Alojamientos';
@@ -460,7 +501,7 @@ class ItemCardConResenas extends StatelessWidget {
                   title: titulo,
                   location: ubicacion,
                   price: precio,
-                  priceSuffix: tipoPrecio,
+                  infoExtra: infoExtra,
                   rating: promedioRating.toString(),
                   reviewCount: cantidadResenas.toString(),
                   imageUrl: rutaImagen,
