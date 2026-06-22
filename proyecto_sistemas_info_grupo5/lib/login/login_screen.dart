@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:proyecto_sistemas_info_grupo5/homepage/home_page.dart';
 import 'package:proyecto_sistemas_info_grupo5/login/register_screen.dart';
 import 'package:proyecto_sistemas_info_grupo5/Servicios/auth.dart';
-import 'package:proyecto_sistemas_info_grupo5/admin/admin_dashboard.dart';
-import 'package:proyecto_sistemas_info_grupo5/operador/operador_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto_sistemas_info_grupo5/buscar/buscar_page.dart';
@@ -63,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (userDoc.exists) {
           final data = userDoc.data() as Map<String, dynamic>?;
-          final bool estaEliminado = data?['eliminado'] ?? false;
+          final bool estaEliminado = data?['eliminated'] ?? false;
 
           // Si el usuario tiene la marca de eliminado, frenamos el acceso en seco
           if (estaEliminado) {
@@ -73,30 +71,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 _errorCredenciales = 'Esta cuenta ha sido eliminada por la administración.';
               });
             }
-            return; // Cortamos la función para que no avance hacia los dashboards ni la homepage
+            return; 
           }
         }
 
-        // 2. Consultar el rol en Firestore antes de redirigir
-        String? rol = await _authService.obtenerRol(uid);
-
+        // ============================================================
+        // 🟩 EL CAMBIO EXACTO:
+        // Eliminamos las consultas manuales de roles y los saltos forzados.
+        // Ahora, mandamos directamente al HomePage sin pasar por los Dashboards.
+        // ============================================================
         if (mounted) {
-          // 3. Redirección inteligente basada en el rol guardado
-          // Usamos .toLowerCase() para evitar errores si lo guardaste como "admin", "Admin", etc.
-          String rolNormalizado = rol?.toLowerCase() ?? 'viajero';
-
-          Widget pantallaDestino;
-          if (rolNormalizado == 'admin') {
-            pantallaDestino = const AdminDashboard();
-          } else if (rolNormalizado == 'operador') {
-            pantallaDestino = const OperadorDashboard();
-          } else {
-            pantallaDestino = const HomePage(); // Rol 'viajero' o por defecto
-          }
-
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => pantallaDestino),
+            MaterialPageRoute(builder: (context) => const HomePage()),
           );
         }
       }
@@ -105,14 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           String errorStr = e.toString().toLowerCase();
 
-          // Detecta si hay algún error de inicio de sesión
           if (errorStr.contains('invalid-credential') ||
               errorStr.contains('wrong-password') ||
               errorStr.contains('user-not-found') ||
               errorStr.contains('invalid-email')) {
             _errorCredenciales = 'Correo o Contraseña incorrecta';
           } else {
-            // Esto por si es un error diferente
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Error al iniciar sesión: ${e.toString()}'),
@@ -127,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    // Limpiamos los controladores de memoria al cerrar la pantalla
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -182,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  const BuscarPage()), // Ajusta si el nombre de tu clase es distinto
+                                  const BuscarPage()), 
                         );
                       },
                       icon: const Icon(Icons.search,
@@ -207,9 +191,8 @@ class _LoginScreenState extends State<LoginScreen> {
           // Contenido central
           Expanded(
             child: SingleChildScrollView(
-              // El padding se mueve al Container hijo para que el ScrollView toque los bordes
               child: Container(
-                width: double.infinity, // Esto empuja la barra a la derecha
+                width: double.infinity, 
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -246,7 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text('Email',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
-                          // 3. ASIGNAR CONTROLLER AL CAMPO EMAIL
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -265,14 +247,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text('Contraseña',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
-                          // 4. ASIGNAR CONTROLLER AL CAMPO CONTRASEÑA
                           TextField(
                             controller: _passwordController,
                             obscureText: true,
                             decoration: InputDecoration(
                               hintText: '**********',
-                              errorText:
-                                  _errorCredenciales, //Para mostrar el error de las credenciales
+                              errorText: _errorCredenciales, 
                               errorStyle: const TextStyle(
                                 color: Colors.redAccent,
                                 fontWeight: FontWeight.w500,
@@ -285,7 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 25),
-                          // 5. ENLAZAR ACCIÓN AL BOTÓN DE LOGUEO
                           ElevatedButton.icon(
                             onPressed: _handleLogin,
                             style: ElevatedButton.styleFrom(
