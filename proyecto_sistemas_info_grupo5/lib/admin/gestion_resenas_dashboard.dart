@@ -13,13 +13,20 @@ class _GestionResenasDashboardState extends State<GestionResenasDashboard> {
   String _busqueda = "";
 
   // Función útil para formatear de manera limpia el Timestamp de Firebase
-  String _formatearFecha(dynamic fecha) {
-    if (fecha == null) return "-";
-    if (fecha is Timestamp) {
-      DateTime dt = fecha.toDate();
-      return DateFormat('dd/MM/yyyy').format(dt);
+  String _formatearFecha(dynamic fechaRaw) {
+    if (fechaRaw == null) return 'Sin fecha';
+
+    try {
+      // 💥 Forzamos a Dart a tratar el objeto como un Timestamp de Firebase
+      if (fechaRaw is Timestamp) {
+        DateTime dt = fechaRaw.toDate();
+        return DateFormat('dd/MM/yyyy').format(dt);
+      }
+    } catch (e) {
+      print("Error al formatear fecha: $e");
     }
-    return fecha.toString();
+
+    return 'Fecha inválida';
   }
 
   // Función para eliminar reseñas directamente de Firestore
@@ -40,13 +47,17 @@ class _GestionResenasDashboardState extends State<GestionResenasDashboard> {
                 Navigator.pop(context);
                 try {
                   await FirebaseFirestore.instance.collection('resenas').doc(idDocumento).delete();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reseña eliminada correctamente'), backgroundColor: Colors.redAccent),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reseña eliminada correctamente'), backgroundColor: Colors.redAccent),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al eliminar: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
@@ -134,8 +145,10 @@ class _GestionResenasDashboardState extends State<GestionResenasDashboard> {
                       // Filtrar localmente según lo que el admin escriba en el buscador
                       if (_busqueda.isNotEmpty) {
                         docs = docs.where((doc) {
-                          String usuario = (doc['usuarioNombre'] ?? '').toString().toLowerCase();
-                          String destino = (doc['destinoNombre'] ?? '').toString().toLowerCase();
+                          // 💡 Se castea explícitamente a Map para evitar problemas de tipo 'Object'
+                          final datos = doc.data() as Map<String, dynamic>;
+                          String usuario = (datos['usuarioNombre'] ?? '').toString().toLowerCase();
+                          String destino = (datos['destinoNombre'] ?? '').toString().toLowerCase();
                           return usuario.contains(_busqueda) || destino.contains(_busqueda);
                         }).toList();
                       }
@@ -164,12 +177,15 @@ class _GestionResenasDashboardState extends State<GestionResenasDashboard> {
                             DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                           ],
                           rows: docs.map((doc) {
+                            // 💡 Al castear el documento completo como un mapa dynamic, Dart ya no protestará por los tipos de las celdas
+                            final datos = doc.data() as Map<String, dynamic>;
+                            
                             String idDoc = doc.id;
-                            String usuario = doc['usuarioNombre'] ?? 'Anónimo';
-                            String destino = doc['destinoNombre'] ?? 'No especificado';
-                            String comentario = doc['comentario'] ?? '';
-                            int calificacion = int.tryParse(doc['calificacion'].toString()) ?? 0;
-                            dynamic fechaRaw = doc['fechaResena'];
+                            String usuario = datos['usuarioNombre'] ?? 'Anónimo';
+                            String destino = datos['destinoNombre'] ?? 'No especificado';
+                            String comentario = datos['comentario'] ?? '';
+                            int calificacion = int.tryParse(datos['calificacion'].toString()) ?? 0;
+                            dynamic fechaRaw = datos['fechaResena'];
 
                             return DataRow(cells: [
                               DataCell(Text(usuario, style: const TextStyle(fontSize: 13))),
