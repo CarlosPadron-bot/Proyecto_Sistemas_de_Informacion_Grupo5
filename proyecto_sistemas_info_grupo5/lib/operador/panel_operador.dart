@@ -208,7 +208,7 @@ class _PanelOperadorState extends State<PanelOperador> {
                   ],
                 ),
                 content: const Text(
-                    'Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración.'),
+                    'Cuenta suspendida. No puedes publicar nuevos servicios en este momento. Para más detalles o reclamos, comunícate con la administración Admin@correo.unimet.edu.ve .'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),

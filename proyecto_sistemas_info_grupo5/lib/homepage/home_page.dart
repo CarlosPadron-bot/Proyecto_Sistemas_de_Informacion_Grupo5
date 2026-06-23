@@ -15,6 +15,7 @@ import '../profile/profile_screen.dart';
 import 'DetalleDestinoPage.dart';
 import 'dart:convert';
 import 'dart:html' as html;
+import 'package:proyecto_sistemas_info_grupo5/widgets_generales/banner_anuncio.dart';
 
 // ==========================================
 // MÓDULO: HOMEPAGE (CON SALUDO PERSONALIZADO)
@@ -252,6 +253,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const BannerAnuncioNuevo(),
             // Banner Principal Verde (Sección Informativa)
             const BannerPrincipal(),
 

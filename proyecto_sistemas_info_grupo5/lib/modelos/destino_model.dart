@@ -13,6 +13,7 @@ class Destino {
   final String estado;
   final String operadorId;
   final Timestamp? fechaReserva;
+  final Timestamp? fechaCreacion;
 
   Destino({
     this.id,
@@ -27,6 +28,7 @@ class Destino {
     required this.estado,
     required this.operadorId,
     this.fechaReserva,
+    this.fechaCreacion,
   });
 
   /// Método para convertir el objeto a un Map (Para GUARDAR en Firestore)
@@ -43,6 +45,7 @@ class Destino {
       'estado': estado,
       'operadorId': operadorId,
       'fechaReserva': fechaReserva,
+      'fechaCreacion': fechaCreacion,
     };
   }
 
@@ -61,6 +64,7 @@ class Destino {
       estado: map['estado'] ?? 'Otros',
       operadorId: map['operadorId'] ?? '',
       fechaReserva: map['fechaReserva'] as Timestamp?,
+      fechaCreacion: map['fechaCreacion'] as Timestamp?,
     );
   }
 
@@ -77,6 +81,7 @@ class Destino {
     String? estado,
     String? operadorId,
     Timestamp? fechaReserva,
+    Timestamp? fechaCreacion,
   }) {
     return Destino(
       id: id ?? this.id,
@@ -91,6 +96,7 @@ class Destino {
       estado: estado ?? this.estado,
       operadorId: operadorId ?? this.operadorId,
       fechaReserva: fechaReserva ?? this.fechaReserva,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
     );
   }
 

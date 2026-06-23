@@ -299,7 +299,7 @@ class _DetalleDestinoPageState extends State<DetalleDestinoPage>
           content: const Text(
             'Tu cuenta de viajero se encuentra temporalmente suspendida por la administración. '
             'No puedes realizar compras de paquetes ni reservas en este momento.\n\n'
-            'Si crees que se trata de un error, comunícate con soporte.',
+            'Si crees que se trata de un error, comunícate con soporte Admin@correo.unimet.edu.ve.',
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
           actions: [

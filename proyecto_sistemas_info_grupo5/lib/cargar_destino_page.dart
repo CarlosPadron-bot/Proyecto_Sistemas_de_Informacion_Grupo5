@@ -187,6 +187,7 @@ class _CargarDestinoPageState extends State<CargarDestinoPage> {
         estado: _estadoSeleccionado,
         operadorId: FirebaseAuth.instance.currentUser!.uid,
         fechaReserva: fechaTimestamp,
+        fechaCreacion: widget.destinoAEditar?.fechaCreacion ?? Timestamp.now(),
       );
 
       if (widget.destinoAEditar != null) {
